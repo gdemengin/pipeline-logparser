@@ -11,9 +11,6 @@
 // but it's also possible to copy the functions in a Jenkinsfile and use them from there (and approve whatever needs to be)
 
 
-// set to true to add verbose information
-this.verbose = false
-
 //***************
 //* LOG PARSING *
 //***************
@@ -85,7 +82,7 @@ def familyTree(nodeId, childrenMap, branchList) {
 // { id: { children: [id ...], nested: [id, ...], parent: id } }
 // cf https://stackoverflow.com/a/57351397
 @NonCPS
-def getWorkflowParallelBranchMap() {
+def getWorkflowParallelBranchMap(verbose) {
 
     // return value
     def branchMap = [:]
@@ -150,7 +147,7 @@ def getWorkflowParallelBranchMap() {
         }
     }
 
-    if (this.verbose) {
+    if (verbose) {
         print "childrenMap=${childrenMap}"
         print "parentMap =${parentMap}"
     }
@@ -165,7 +162,7 @@ def getWorkflowParallelBranchMap() {
         }
     }
 
-    if (this.verbose) {
+    if (verbose) {
         print "branchMap=${branchMap}"
     }
 
@@ -177,14 +174,14 @@ def getWorkflowParallelBranchMap() {
 // [ { id: id, start: start, stop: stop, branches: branches }* ]
 // id and branches can be null. branches contain all nested branch (starting with the nested one)
 @NonCPS
-def getLogIndexWithBranches() {
+def getLogIndexWithBranches(verbose) {
 
     // 1/ read log-index file with log offsets first
     // (read it before to parse id files to have only known ids)
     def logIndex = getLogIndex()
 
     // 2/ get branch information
-    def branchMap = getWorkflowParallelBranchMap()
+    def branchMap = getWorkflowParallelBranchMap(verbose)
 
     // and use branchMap to fill reverse map for all ids : for each id find which branch(es) it belong to
     def idBranchMap = [:]
@@ -201,7 +198,7 @@ def getLogIndexWithBranches() {
         }
     }
 
-    if (this.verbose) {
+    if (verbose) {
         print "idBranchMap=${idBranchMap}"
     }
 
@@ -214,7 +211,7 @@ def getLogIndexWithBranches() {
         }
     }
 
-    if (this.verbose) {
+    if (verbose) {
         print "logIndex=${logIndex}"
     }
 
@@ -256,7 +253,7 @@ def getLogsWithBranchInfo(options = [:])
     def output = ''
 
     // 1/ parse options
-    options.keySet().each{ assert it in ['filter', 'showParents', 'markNestedFiltered', 'hideVT100'] }
+    options.keySet().each{ assert it in ['filter', 'showParents', 'markNestedFiltered', 'hideVT100', 'verbose'], "invalid option $it" }
 
     // name of the branch to filter. default value null
     def filterBranchName = options.filter
@@ -274,15 +271,17 @@ def getLogsWithBranchInfo(options = [:])
     // hide VT100 markups
     def hideVT100 = options.hideVT100 == null ? true : options.hideVT100
 
+    def verbose = options.verbose == null ? false : options.verbose
+
     def WJpluginVerList = Jenkins.instance.pluginManager.plugins.findAll{ it.getShortName() == 'workflow-job' }.collect { it.getVersion() }
-    assert WJpluginVerList.size() == 1
+    assert WJpluginVerList.size() == 1, 'could not fing workflow-job plugin version'
     def WJpluginVer = Float.parseFloat(WJpluginVerList[0])
 
     if (WJpluginVer > 2.25) {
         // get the log index before to read the logfile to make sure all items are in the file
-        def logIndex = getLogIndexWithBranches()
+        def logIndex = getLogIndexWithBranches(verbose)
 
-        if (this.verbose) {
+        if (verbose) {
             print "logIndex =${logIndex}"
         }
 
