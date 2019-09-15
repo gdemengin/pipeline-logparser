@@ -276,7 +276,7 @@ def getLogsWithBranchInfo(options = [:])
 
     def WJpluginVerList = Jenkins.instance.pluginManager.plugins.findAll{ it.getShortName() == 'workflow-job' }.collect { it.getVersion() }
     assert WJpluginVerList.size() == 1
-    def WJpluginVer = Float.parseFloat(WJpluginVerList)
+    def WJpluginVer = Float.parseFloat(WJpluginVerList[0])
 
     if (WJpluginVer > 2.25) {
         // get the log index before to read the logfile to make sure all items are in the file

@@ -2,7 +2,7 @@
 
 
 // import logparser library
-logparser = library(identifier:'pipeline-logparser@master', changelog: false)
+def logparser = library(identifier:'pipeline-logparser@master', changelog: false)
 
 
 // =========================
