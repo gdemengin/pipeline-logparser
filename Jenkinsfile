@@ -2,7 +2,7 @@
 
 
 // import logparser library
-logparser = library(identifier:"pipeline-logparser@master", changelog: false)
+logparser = library(identifier:'pipeline-logparser@master', changelog: false)
 
 
 // =========================
@@ -16,7 +16,7 @@ def testBranch(name, loop) {
         sleep 1
         echo "i=$i in $name"
     }
-    echo 'in $name'
+    echo "in $name"
 }
 
 def runBranches() {
