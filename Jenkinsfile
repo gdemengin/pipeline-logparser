@@ -2,7 +2,7 @@
 
 
 // import logparser library
-def logparser = library(identifier:'pipeline-logparser@master', changelog: false)
+@Library('pipeline-logparser@master')
 
 
 // =========================
@@ -21,7 +21,6 @@ def testBranch(name, loop) {
 
 def runBranches() {
     def branches = [:]
-    def i, j, k, l
     def loop=2
 
     // simple branch with logs
@@ -52,7 +51,8 @@ def runBranches() {
 
     // branch with no logs
     branches.branch3 = {
-        sleep 2
+        def k = 0
+        k += 1
     }
 
     // run branches
@@ -103,3 +103,4 @@ def parseLogs() {
 }
 
 parseLogs()
+
