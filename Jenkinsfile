@@ -1,59 +1,67 @@
 // sample pipeline to test https://github.com/gdemengin/pipeline-logs/ "Global Pipeline Library" logparser
 
-// ============================
-// = create parallel branches =
-// = and nested branches      =
-// ============================
-def branches = [:]
-def i, j, k, l
-def loop=5
 
-// simple branch with logs
-branches.branch1 = {
-    for (i=0; i < loop; i++) {
+// import logparser library
+
+logparser = library(identifier:"pipeline-logs@master", changelog: false)
+
+
+// =========================
+// = run parallel branches =
+// = and nested branches   =
+// =========================
+
+// alternate sleeps and echo to have mixed logs
+def testBranch(name, loop) {
+    for (def i=0; i < loop; i++) {
         sleep 1
-        echo "i=$i in branch1"
+        echo "i=$i in $name"
     }
-    echo 'in branch1'
+    echo 'in $name'
 }
 
-// branch with nested branches
-// one of the nested branches has the same name as branch1
-branches.branch2 = {
-    for (j=0; j < loop; j++) {
-        sleep 1
-        echo "j=$j in branch2"
+def runBranches() {
+    def branches = [:]
+    def i, j, k, l
+    def loop=2
+
+    // simple branch with logs
+    branches.branch1 = {
+        testBranch('branch1', loop)
     }
 
-    def nestedBranches = [:]
-    nestedBranches.branch21 = {
-        for (k=0; k < loop; k++) {
-            sleep 1
-            echo "k=$k in branch2.branch21"
+    // branch with nested branches
+    // one of the nested branches has the same name as branch1
+    branches.branch2 = {
+        testBranch('branch2', loop)
+
+        def nestedBranches = [:]
+        nestedBranches.branch21 = {
+            testBranch('branch2.branch21', loop)
         }
-    }
-    echo 'in branch2 before to run nested branches'
-    nestedBranches.branch2 = {
-        for (l=0; l < loop; l++) {
-            sleep 1
-            echo "l=$l in branch2.branch22"
+        echo 'in branch2 before to run nested branches'
+        nestedBranches.branch22 = {
+            testBranch('branch2.branch22', loop)
         }
+
+        // see how we manage to have 2 branches with the same name
+        nestedBranches.branch1 = {
+            testBranch('branch2.branch1', loop)
+        }
+        parallel nestedBranches
     }
-    // see how we manage to have 2 branches with the same name
-    nestedBranches.branch1 = {
-        echo 'in branch2.branch1'
+
+    // branch with no logs
+    branches.branch3 = {
+        sleep 2
     }
-    parallel nestedBranches
+
+    // run branches
+    parallel branches
+    echo 'this log is not in any branch'
 }
 
-// branch with no logs
-branches.branch3 = {
-    sleep 20
-}
 
-// run branches
-parallel branches
-echo 'this log is not in any branch'
 
 // sleep 1 because sometimes the last log is missing
 // is this always good enough ?
@@ -61,7 +69,6 @@ echo 'this log is not in any branch'
 sleep 1
 
 
-logparser = library(identifier:"pipeline-logs@master", changelog: false)
 
 // get logs with [branch] prefix
 def logsWithBranchInfo = logparser.getLogsWithBranchInfo()
