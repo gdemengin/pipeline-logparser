@@ -250,13 +250,16 @@ def removeVT100Markups(buffer) {
 // cf https://stackoverflow.com/a/57351397
 // (workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304)
 @NonCPS
-def getLogsWithBranchInfo(filterBranchName = null, options = [:] )
+def getLogsWithBranchInfo(options = [:])
 {
     // return value
     def output = ''
 
     // 1/ parse options
-    options.keySet().each{ assert it in ['showParents', 'markNestedFiltered', 'hideVT100'] }
+    options.keySet().each{ assert it in ['filter', 'showParents', 'markNestedFiltered', 'hideVT100'] }
+
+    // name of the branch to filter. default value null
+    def filterBranchName = options.filter
 
     // show parent branch(es) name(s) if nested branch
     def showParents = options.showParents == null ? true : options.showParents
@@ -391,9 +394,9 @@ def archiveArtifactBuffer(buffer, name) {
 // cf https://stackoverflow.com/a/57351397
 // (workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304)
 @NonCPS
-def archiveLogsWithBranches(name, filterBranchName = null, options = [:])
+def archiveLogsWithBranchInfo(name, options = [:])
 {
-    archiveArtifactBuffer(getLogsWithBranches(filterBranchName, options), name)
+    archiveArtifactBuffer(getLogsWithBranchInfo(options), name)
 }
 
 
