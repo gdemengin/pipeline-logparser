@@ -3,7 +3,7 @@
 
 // import logparser library
 
-logparser = library(identifier:"pipeline-logs@master", changelog: false)
+logparser = library(identifier:"pipeline-logparser@master", changelog: false)
 
 
 // =========================
