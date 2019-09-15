@@ -2,7 +2,10 @@
 
 
 // import logparser library
-@Library('pipeline-logparser@master')
+@Library('pipeline-logparser@master') _
+
+// uncomment if needed
+// logparser.setVerbose(true)
 
 
 // =========================
@@ -66,12 +69,6 @@ runBranches()
 // =================================
 // = parse logs and archive them   =
 // =================================
-
-// functions from global pipeline library logparser cannot be called directly in Jenkinsfile script
-// it causes "java.lang.ClassNotFoundException: null"
-// maybe I'm not doing it right ...
-
-// workaround: call these functions from inside another function
 
 def parseLogs() {
 

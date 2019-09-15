@@ -1,4 +1,4 @@
-// library with functions adding prefix to each log belonging to a branch (like workflow-plugin used to do prior to version 2.25)
+// library with functions adding prefix to each log belonging to a branch (just like logs from workflow-job plugin used to do prior to version 2.25)
 // also it allows
 // - to filter logs by branchName
 // - to show name of parent branches (as prefix in the logs) for nested branches
@@ -7,9 +7,20 @@
 // - and to archive files in job artifacts without having to allocate a node (same as ArchiveArtifacts but without node() scope)
 
 // it is meant to be used a a "Global Pipeline Library" (Manage jenkins > Configure System > Global Pipeline Library)
-// to avoid having to approve dangerous methods through "Manage Jenkins > In-process Script Approval"
-// but it's also possible to copy the functions in a Jenkinsfile and use them from there (and approve whatever needs to be)
+// to avoid having to approve methods through "Manage Jenkins > In-process Script Approval" to be able to use the functions
+// but it's also possible to copy the functions in a Jenkinsfile and use them from there (implies approving whatever needs to be)
 
+
+// *******************
+// * SCRIPT VARIABLE *
+// *******************
+@groovy.transform.Field
+def verbose = false
+
+@NonCPS
+def setVerbose(v) {
+    verbose = v
+}
 
 //***************
 //* LOG PARSING *
@@ -56,6 +67,10 @@ def getLogIndex() {
         index = stop
     }
 
+    if (verbose) {
+        print "logIndex=${logIndex}"
+    }
+
     return logIndex
 }
 
@@ -82,7 +97,7 @@ def familyTree(nodeId, childrenMap, branchList) {
 // { id: { children: [id ...], nested: [id, ...], parent: id } }
 // cf https://stackoverflow.com/a/57351397
 @NonCPS
-def getWorkflowParallelBranchMap(verbose) {
+def getWorkflowParallelBranchMap() {
 
     // return value
     def branchMap = [:]
@@ -174,14 +189,14 @@ def getWorkflowParallelBranchMap(verbose) {
 // [ { id: id, start: start, stop: stop, branches: branches }* ]
 // id and branches can be null. branches contain all nested branch (starting with the nested one)
 @NonCPS
-def getLogIndexWithBranches(verbose) {
+def getLogIndexWithBranches() {
 
     // 1/ read log-index file with log offsets first
     // (read it before to parse id files to have only known ids)
     def logIndex = getLogIndex()
 
     // 2/ get branch information
-    def branchMap = getWorkflowParallelBranchMap(verbose)
+    def branchMap = getWorkflowParallelBranchMap()
 
     // and use branchMap to fill reverse map for all ids : for each id find which branch(es) it belong to
     def idBranchMap = [:]
@@ -203,7 +218,7 @@ def getLogIndexWithBranches(verbose) {
     }
 
     // finally fill the logIndex with list of branches
-    logIndex = logIndex.collect {
+    def logIndexWithBranches = logIndex.collect {
         if (it.id) {
             return [ id: it.id, start: it.start, stop: it.stop, branches: idBranchMap."${it.id}" ]
         } else {
@@ -212,10 +227,10 @@ def getLogIndexWithBranches(verbose) {
     }
 
     if (verbose) {
-        print "logIndex=${logIndex}"
+        print "logIndexWithBranches=${logIndex}"
     }
 
-    return logIndex
+    return logIndexWithBranches
 }
 
 //***************************
@@ -253,7 +268,7 @@ def getLogsWithBranchInfo(options = [:])
     def output = ''
 
     // 1/ parse options
-    options.keySet().each{ assert it in ['filter', 'showParents', 'markNestedFiltered', 'hideVT100', 'verbose'], "invalid option $it" }
+    options.keySet().each{ assert it in ['filter', 'showParents', 'markNestedFiltered', 'hideVT100'], "invalid option $it" }
 
     // name of the branch to filter. default value null
     def filterBranchName = options.filter
@@ -271,19 +286,13 @@ def getLogsWithBranchInfo(options = [:])
     // hide VT100 markups
     def hideVT100 = options.hideVT100 == null ? true : options.hideVT100
 
-    def verbose = options.verbose == null ? false : options.verbose
-
     def WJpluginVerList = Jenkins.instance.pluginManager.plugins.findAll{ it.getShortName() == 'workflow-job' }.collect { it.getVersion() }
     assert WJpluginVerList.size() == 1, 'could not fing workflow-job plugin version'
     def WJpluginVer = Float.parseFloat(WJpluginVerList[0])
 
     if (WJpluginVer > 2.25) {
         // get the log index before to read the logfile to make sure all items are in the file
-        def logIndex = getLogIndexWithBranches(verbose)
-
-        if (verbose) {
-            print "logIndex =${logIndex}"
-        }
+        def logIndex = getLogIndexWithBranches()
 
         // Read the log file as byte[].
         def logFile = currentBuild.rawBuild.getLogFile()
@@ -381,6 +390,11 @@ def getLogsWithBranchInfo(options = [:])
 def archiveArtifactBuffer(buffer, name) {
     def jobRoot = currentBuild.rawBuild.getRootDir()
     def file = new File("${jobRoot}/archive/${name}")
+
+    if (verbose) {
+        print "archiving ${file.path}"
+    }
+
     if (! file.parentFile.exists()){
         file.parentFile.mkdirs();
     }
@@ -400,3 +414,4 @@ def archiveLogsWithBranchInfo(name, options = [:])
 
 
 return this
+
