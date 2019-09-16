@@ -90,7 +90,7 @@ def parseLogs() {
     logparser.archiveLogsWithBranchInfo('consoleText.branch3.txt', [filter:'branch3'])
 
     // branch2 logs without mention of filtered nested branches
-    logparser.archiveLogsWithBranchInfo('consoleText.branch2.txt', [filter:'branch2', markNestedFiltered:false])
+    logparser.archiveLogsWithBranchInfo('consoleText.branch2.nonestedmark.txt', [filter:'branch2', markNestedFiltered:false])
 
 
     // access logs programmatically
