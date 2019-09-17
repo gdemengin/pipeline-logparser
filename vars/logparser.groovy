@@ -1,15 +1,7 @@
-// library with functions adding prefix to each log belonging to a branch (just like logs from workflow-job plugin used to do prior to version 2.25)
-// also it allows
-// - to filter logs by branchName
-// - to show name of parent branches (as prefix in the logs) for nested branches
-// - to hide (or show) VT100 markups
-//
-// - and to archive files in job artifacts without having to allocate a node (same as ArchiveArtifacts but without node() scope)
-
-// it is meant to be used a a "Global Pipeline Library" (Manage jenkins > Configure System > Global Pipeline Library)
-// to avoid having to approve methods through "Manage Jenkins > In-process Script Approval" to be able to use the functions
-// but it's also possible to copy the functions in a Jenkinsfile and use them from there (implies approving whatever needs to be)
-
+// ===================================
+// = logparser for Jenkins pipelines =
+// ===================================
+// a library to parse and filter logs
 
 // *******************
 // * SCRIPT VARIABLE *
