@@ -73,8 +73,8 @@ runBranches()
 def parseLogs() {
 
     // sleep 1s before to parse logs because sometimes the last lines of log are missing
-    // but is 1s this always good enough ???
-    // TODO: find a better way to make sure the log is complete (may be put a marker in the log and wait for it to appear ??)
+    // but is 1s always good enough ???
+    // TODO: find a better way to make sure the log is complete (may be print a marker in the log and wait for it to appear ??)
     sleep 1
 
     // archive full logs
