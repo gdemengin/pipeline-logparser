@@ -25,22 +25,22 @@
         available options:
         <ul>
             <li>
-                <b><code>filter</code></b> (default null) : name of the branch to filter<br><br>
+                <b><code>filter = null</code></b> : name of the branch to filter<br><br>
             </li>
             <li>
-                <b><code>showParents</code></b> (default true) : show name of parent branches<br>
+                <b><code>showParents = true</code></b> : show name of parent branches<br>
                 <p>
                     &nbsp;&nbsp;&nbsp;&nbsp;example: <code>"<b>[branch2]</b> [branch21] in branch21 nested in branch2"</code>"
                 </p>
             </li>
             <li>
-                <b><code>markNestedFiltered</code></b> (default true) : add name of nested branches filtered out<br>
+                <b><code>markNestedFiltered = true</code></b> : add name of nested branches filtered out<br>
                 <p>
                     &nbsp;&nbsp;&nbsp;&nbsp;example: <code>"[ filtered 315 bytes of logs for nested branches: branch2.branch21 branch2.branch22 ] (...)"</code>
                 </p>
             </li>
             <li>
-                <b><code>hideVT100</code></b> (default true) : hide the VT100 markups in raw logs<br>
+                <b><code>hideVT100 = true</code></b> : hide the VT100 markups in raw logs<br>
                 <p>
                     &nbsp;&nbsp;&nbsp;&nbsp;cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html<br>
                     &nbsp;&nbsp;&nbsp;&nbsp;cf https://issues.jenkins-ci.org/browse/JENKINS-48344
@@ -49,34 +49,34 @@
         </ul>
     </dl>
     <dl>
-        examples:<br>
+        examples:
         <ul>
             <li>
-                archive full logs as $JOB_URL/&lt;id&gt;/artifacts/consoleText.txt:<br>
+                archive full logs as $JOB_URL/&lt;runId&gt;/artifact/consoleText.txt:
                 <p>
                     &nbsp;&nbsp;&nbsp;&nbsp;<b><code>logparser.archiveLogsWithBranchInfo('consoleText.txt')</code></b>
                 </p>
             </li>
             <li>
-                get full logs:<br>
+                get full logs:
                 <p>
                     &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logs = logparser.getLogsWithBranchInfo()</code></b>
                 </p>
             </li>
             <li>
-                get logs for branch2 only:<br>
+                get logs for branch2 only:
                 <p>
                     &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logsBranch2 = logparser.getLogsWithBranchInfo(filter: 'branch2')</code></b>
                 </p>
             </li>
             <li>
-                get logs for branch2 without parents or nested branches markups:<br>
+                get logs for branch2 without parents or nested branches markups:
                 <p>
                     &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logsBranch2 = logparser.getLogsWithBranchInfo(filter: 'branch2', markNestedFiltered:false, showParents:false)</code></b>
                 </p>
             </li>
             <li>
-                archive logs for branch2 without parents or nested branches markups:<br>
+                archive logs for branch2 without parents or nested branches markups:
                 <p>
                     &nbsp;&nbsp;&nbsp;&nbsp;<b><code>logparser.archiveLogsWithBranchInfo('logsBranch2.txt', [filter: 'branch2', markNestedFiltered: false, showParents: false])</code></b>
                 </p>

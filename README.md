@@ -7,28 +7,28 @@ a library to parse and filter logs
 it allows
 - to add branch prefix [branchName] in front of each line of the logs belonging to a parallel branch
 
-  > [Pipeline] Start of Pipeline  
-  > [Pipeline] parallel  
-  > [Pipeline] { (Branch: branch1)  
-  > [Pipeline] { (Branch: branch2)  
-  > [Pipeline] }  
-  > [Pipeline] echo  
-  > *[branch1]* in branch1  
-  > [Pipeline] sleep  
-  > *[branch1]* Sleeping for 1 sec  
-  > [Pipeline] echo  
-  > *[branch2]* in branch2  
-  > [Pipeline] sleep  
-  > *[branch2]* Sleeping for 1 sec
+  [Pipeline] Start of Pipeline
+  [Pipeline] parallel
+  [Pipeline] { (Branch: branch1)
+  [Pipeline] { (Branch: branch2)
+  [Pipeline] }
+  [Pipeline] echo
+  *[branch1]* in branch1
+  [Pipeline] sleep
+  *[branch1]* Sleeping for 1 sec
+  [Pipeline] echo
+  *[branch2]* in branch2
+  [Pipeline] sleep
+  *[branch2]* Sleeping for 1 sec
 
 - to filter logs by branchName
 
-  > *[branch1]* in branch1  
-  > *[branch1]* Sleeping for 1 sec
+  *[branch1]* in branch1
+  *[branch1]* Sleeping for 1 sec
 
-- to show name of parent branches (as prefix in the logs) for nested branches
+- to show name of parent branches (parent branch first) for nested branches
 
-  > *[branch2] [branch21]* in branch2.branch21
+  *[branch2]* [branch21] in branch2.branch21
 
 - to hide VT100 markups from raw logs
 
@@ -61,33 +61,35 @@ in Jenkinsfile import library like this
 ### use logparser functions:
 
 * `archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])`
+
   archive logs (with branch information) in run artifacts
 
 * `String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])`
+
   get logs with branch information
 
 * available options:
-  * `filter` (default null) : name of the branch to filter
+  * `filter = null` : name of the branch to filter
 
-  * `showParents` (default true) : show name of parent branches
-
-    example:  
-    > *[branch2]* [branch21] in branch21 nested in branch2
-
-  * markNestedFiltered (default true) : add name of nested branches filtered out
+  * `showParents = true` : show name of parent branches
 
     example:  
-    > [ filtered 315 bytes of logs for nested branches: branch2.branch21 branch2.branch22 ] (...)
+    *[branch2]* [branch21] in branch21 nested in branch2
 
-  * hideVT100 (default true) : hide the VT100 markups in raw logs
+  * `markNestedFiltered = true` : add name of nested branches filtered out
+
+    example:  
+    [ filtered 315 bytes of logs for nested branches: branch2.branch21 branch2.branch22 ] (...)
+
+  * `hideVT100 = true` : hide the VT100 markups in raw logs
 
     cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html
     cf https://issues.jenkins-ci.org/browse/JENKINS-48344
 
 * examples:
-  * archive full logs as $RUN_URL/artifacts/consoleText.txt:
+  * archive full logs as $JOB_URL/&lt;runId&gt;/artifacts/consoleText.txt:
 
-    ```logparser.archiveLogsWithBranchInfo('consoleText.txt')``
+    ```logparser.archiveLogsWithBranchInfo('consoleText.txt')```
 
   * get full logs:
 
@@ -99,11 +101,22 @@ in Jenkinsfile import library like this
 
   * get logs for branch2 without parents or nested branches markups:
 
-    ```String logsBranch2 = logparser.getLogsWithBranchInfo(filter: 'branch2', markNestedFiltered:false, showParents:false)```
+    ```String logsBranch2 = logparser.getLogsWithBranchInfo(
+           filter: 'branch2',
+           markNestedFiltered:false,
+           showParents:false
+       )```
 
   * archive logs for branch2 without parents or nested branches markups:
 
-    ```logparser.archiveLogsWithBranchInfo('logsBranch2.txt', [filter: 'branch2', markNestedFiltered: false, showParents: false])```
+    ```logparser.archiveLogsWithBranchInfo(
+           'logsBranch2.txt',
+           [
+               filter: 'branch2',
+               markNestedFiltered: false,
+               showParents: false
+           ]
+       )```
 
   * get full logs with VT100 markups:
 
