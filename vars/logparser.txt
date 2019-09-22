@@ -3,7 +3,7 @@
 <!-- documentation for $JOB_URL//pipeline-syntax/globals -->
 <div>
     <p>
-        <a href="https://github.com/gdemengin/pipeline-logparser">pipeline-logparser</a> a library to parse and filter logs<br>
+        <a href="https://github.com/gdemengin/pipeline-logparser">pipeline-logparser</a> a library to parse and filter logs
     </p>
     <dl>
         <dt><b><code>archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])</code></b></dt>
