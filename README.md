@@ -7,28 +7,28 @@ a library to parse and filter logs
 it allows
 - to add branch prefix [branchName] in front of each line of the logs belonging to a parallel branch
 
-  [Pipeline] Start of Pipeline  
-  [Pipeline] parallel  
-  [Pipeline] { (Branch: branch1)  
-  [Pipeline] { (Branch: branch2)  
-  [Pipeline] }  
-  [Pipeline] echo  
-  *[branch1]* in branch1  
-  [Pipeline] sleep  
-  *[branch1]* Sleeping for 1 sec  
-  [Pipeline] echo  
-  *[branch2]* in branch2  
-  [Pipeline] sleep  
-  *[branch2]* Sleeping for 1 sec
+  > [Pipeline] Start of Pipeline  
+  > [Pipeline] parallel  
+  > [Pipeline] { (Branch: branch1)  
+  > [Pipeline] { (Branch: branch2)  
+  > [Pipeline] }  
+  > [Pipeline] echo  
+  > **[branch1]** in branch1  
+  > [Pipeline] sleep  
+  > **[branch1]** Sleeping for 1 sec  
+  > [Pipeline] echo  
+  > **[branch2]** in branch2  
+  > [Pipeline] sleep  
+  > **[branch2]** Sleeping for 1 sec
 
 - to filter logs by branchName
 
-  *[branch1]* in branch1  
-  *[branch1]* Sleeping for 1 sec
+  > **[branch1]** in branch1  
+  > **[branch1]** Sleeping for 1 sec
 
 - to show name of parent branches (parent branch first) for nested branches
 
-  *[branch2]* [branch21] in branch2.branch21
+  > **[branch2]** [branch21] in branch2.branch21
 
 - to hide VT100 markups from raw logs
 
@@ -74,12 +74,12 @@ in Jenkinsfile import library like this
   * `showParents = true` : show name of parent branches
 
     example:  
-    *[branch2]* [branch21] in branch21 nested in branch2
+    > **[branch2]** [branch21] in branch21 nested in branch2
 
   * `markNestedFiltered = true` : add name of nested branches filtered out
 
     example:  
-    [ filtered 315 bytes of logs for nested branches: branch2.branch21 branch2.branch22 ] (...)
+    > [ filtered 315 bytes of logs for nested branches: branch2.branch21 branch2.branch22 ] (...)
 
   * `hideVT100 = true` : hide the VT100 markups in raw logs
 
