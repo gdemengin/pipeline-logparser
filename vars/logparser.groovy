@@ -23,7 +23,7 @@ def setVerbose(v) {
 // id can be null (technical part of the logs)
 // cf https://stackoverflow.com/a/57351397
 @NonCPS
-def getLogIndex() {
+List<java.util.LinkedHashMap> getLogIndex() {
 
     // return value
     def logIndex = []
@@ -67,7 +67,8 @@ def getLogIndex() {
 }
 
 // recursive
-// build list of children ids and list of nested branch ids for a particular workflow node
+// internal
+// used internally to build list of children ids and list of nested branch ids for a particular workflow node
 @NonCPS
 def familyTree(nodeId, childrenMap, branchList) {
     def family = [:]
@@ -85,11 +86,12 @@ def familyTree(nodeId, childrenMap, branchList) {
     return family
 }
 
-// return map describing the content of each branch (workflow ids + nested branches)
+// return map describing the content of each branch:
+// workflow ids of children, nested branches and parent branch
 // { id: { children: [id ...], nested: [id, ...], parent: id } }
 // cf https://stackoverflow.com/a/57351397
 @NonCPS
-def getWorkflowParallelBranchMap() {
+java.util.LinkedHashMap getWorkflowParallelBranchMap() {
 
     // return value
     def branchMap = [:]
@@ -178,10 +180,10 @@ def getWorkflowParallelBranchMap() {
 
 
 // return list of maps describing the logs offsets, workflow ids and branche name(s)
-// [ { id: id, start: start, stop: stop, branches: branches }* ]
+// [ { id: id, start: start, stop: stop, branches: [ branch1, branch2, ... ] }* ]
 // id and branches can be null. branches contain all nested branch (starting with the nested one)
 @NonCPS
-def getLogIndexWithBranches() {
+List<java.util.LinkedHashMap> getLogIndexWithBranches() {
 
     // 1/ read log-index file with log offsets first
     // (read it before to parse id files to have only known ids)
@@ -229,13 +231,13 @@ def getLogIndexWithBranches() {
 //* LOG FILTERING & EDITING *
 //***************************
 
-// remove log VT100 markups which make logfile hard to read (ESC[8mblablaESC[0m)
+// remove log VT100 markups ( ESC[8m.*ESC[0m ) which make logfile hard to read
 // cf http://ascii-table.com/ansi-escape-sequences-vt-100.php
 // cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html
 // cf https://issues.jenkins-ci.org/browse/JENKINS-48344
 // TODO parse markup to extract useful information (timestamp)
 @NonCPS
-def removeVT100Markups(buffer) {
+String removeVT100Markups(String buffer) {
     return buffer.replaceAll(/\x1B\[8m.*?\x1B\[0m/, '')
 }
 
@@ -254,7 +256,7 @@ def removeVT100Markups(buffer) {
 // cf https://stackoverflow.com/a/57351397
 // (workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304)
 @NonCPS
-def getLogsWithBranchInfo(options = [:])
+String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])
 {
     // return value
     def output = ''
@@ -379,7 +381,7 @@ def getLogsWithBranchInfo(options = [:])
 
 // archive buffer directly on the master (no need to instantiate a node like ArchiveArtifact)
 @NonCPS
-def archiveArtifactBuffer(buffer, name) {
+def archiveArtifactBuffer(String buffer, String name) {
     def jobRoot = currentBuild.rawBuild.getRootDir()
     def file = new File("${jobRoot}/archive/${name}")
 
@@ -399,7 +401,7 @@ def archiveArtifactBuffer(buffer, name) {
 // cf https://stackoverflow.com/a/57351397
 // (workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304)
 @NonCPS
-def archiveLogsWithBranchInfo(name, options = [:])
+def archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])
 {
     archiveArtifactBuffer(getLogsWithBranchInfo(options), name)
 }

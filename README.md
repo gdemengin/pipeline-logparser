@@ -6,32 +6,29 @@ a library to parse and filter logs
 ## content
 it allows
 - to add branch prefix [branchName] in front of each line of the logs belonging to a parallel branch
-```
-[Pipeline] echo
-[branch1] i=0 in branch1
-[Pipeline] sleep
-[branch1] Sleeping for 1 sec
-[Pipeline] echo
-[branch2] i=0 in branch2
-[Pipeline] sleep
-[branch2] Sleeping for 1 sec
-[Pipeline] echo
-[branch1] i=1 in branch1
-```
+> [Pipeline] Start of Pipeline
+> [Pipeline] parallel
+> [Pipeline] { (Branch: branch1)
+> [Pipeline] { (Branch: branch2)
+> [Pipeline] }
+> [Pipeline] echo
+> *[branch1]* in branch1
+> [Pipeline] sleep
+> *[branch1]* Sleeping for 1 sec
+> [Pipeline] echo
+> *[branch2]* in branch2
+> [Pipeline] sleep
+> *[branch2]* Sleeping for 1 sec
+
 - to filter logs by branchName
-```
-[branch1] i=0 in branch1
-[branch1] Sleeping for 1 sec
-[branch1] i=1 in branch1
-```
+> *[branch1]* in branch1
+> *[branch1]* Sleeping for 1 sec
+
 - to show name of parent branches (as prefix in the logs) for nested branches
-```
-[branch2] [branch21] in branch2.branch21
-```
+> *[branch2] [branch21]* in branch2.branch21
 - to hide VT100 markups from raw logs
-- to get access to descriptors of log and branches internal ids
-- to archive files in job artifacts (without having to allocate a node)
-  * same as ArchiveArtifacts but without node() scope
+- to access descriptors of log and branches internal ids
+- to archive logs in job artifacts (without having to allocate a node : same as ArchiveArtifacts but without `node()` scope)
 
 ## installation
 
@@ -47,27 +44,53 @@ Note:
   * using this library as a "Global Pipeline Library" allows to avoid that
 
 ## usage:
-- in Jenkinsfile import library like this
+
+### import logparser library
+in Jenkinsfile import library like this
 ```
 @Library('pipeline-logparser@1.0') _
 ```
   * identifier "pipeline-logparser" is the name of the library set by jenkins administrator in configuration: it may be different on your instance
 
-- then call one of [logparser](./vars/logparser.groovy) functions:
-  * to archive logfile in job artifacts
-```
-logparser.archiveLogsWithBranchInfo(filename)
-```
-  * same filtering branch name
-```
-logparser.archiveLogsWithBranchInfo(filename, [filter: branchName ])
-```
-  * to get logfile in pipeline
-```
-logparser.getLogsWithBranchInfo()
-```
+### use logparser functions:
 
-## documentation
+* `archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])`
+archive logs (with branch information) in run artifacts
 
-- see 'logparser' documentation in $JOB_URL/pipeline-syntax/ (visible only after the library has been imported once)
-- or see [logparser.html](./vars/logparser.html)
+* `String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])`
+get logs with branch information
+
+* available options:
+  * `filter` (default null) : name of the branch to filter
+
+  * `showParents` (default true) : show name of parent branches
+    example: 
+    > *[branch2]* [branch21] in branch21 nested in branch2
+
+  * markNestedFiltered (default true) : add name of nested branches filtered out
+    example:
+    > [ filtered 315 bytes of logs for nested branches: branch2.branch21 branch2.branch22 ] (...)
+
+  * hideVT100 (default true) : hide the VT100 markups in raw logs
+    cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html
+    cf https://issues.jenkins-ci.org/browse/JENKINS-48344
+
+* examples:
+  * archive full logs as $JOB_URL/<id>/artifacts/consoleText.txt:
+    `logparser.archiveLogsWithBranchInfo('consoleText.txt')`
+
+  * get full logs:
+    `String logs = logparser.getLogsWithBranchInfo()`
+
+  * get logs for branch2 only:
+    `String logsBranch2 = logparser.getLogsWithBranchInfo(filter: 'branch2')`
+
+  * get logs for branch2 without parents or nested branches markups:
+    `String logsBranch2 = logparser.getLogsWithBranchInfo(filter: 'branch2', markNestedFiltered:false, showParents:false)`
+
+  * archive logs for branch2 without parents or nested branches markups:
+    `logparser.archiveLogsWithBranchInfo('logsBranch2.txt', [filter: 'branch2', markNestedFiltered: false, showParents: false])`
+
+  * get full logs with VT100 markups:
+    `String logs = logparser.getLogsWithBranchInfo(hideVT100: false)`
+

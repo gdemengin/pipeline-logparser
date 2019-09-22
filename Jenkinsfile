@@ -94,9 +94,10 @@ def parseLogs() {
 
 
     // access logs programmatically
-    def logsBranch1 = logparser.getLogsWithBranchInfo([filter:'branch1'])
-    assert logsBranch1.contains('in branch1') == true
-
+    def logsBranch2 = logparser.getLogsWithBranchInfo(filter:'branch2')
+    print "logsBranch2='''${logsBranch2}'''"
+    assert logsBranch2.contains('in branch1') == false
+    assert logsBranch2.contains('in branch2') == true
 }
 
 parseLogs()
