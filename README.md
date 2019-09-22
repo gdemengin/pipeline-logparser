@@ -7,23 +7,23 @@ a library to parse and filter logs
 it allows
 - to add branch prefix [branchName] in front of each line of the logs belonging to a parallel branch
 
-  [Pipeline] Start of Pipeline
-  [Pipeline] parallel
-  [Pipeline] { (Branch: branch1)
-  [Pipeline] { (Branch: branch2)
-  [Pipeline] }
-  [Pipeline] echo
-  *[branch1]* in branch1
-  [Pipeline] sleep
-  *[branch1]* Sleeping for 1 sec
-  [Pipeline] echo
-  *[branch2]* in branch2
-  [Pipeline] sleep
+  [Pipeline] Start of Pipeline  
+  [Pipeline] parallel  
+  [Pipeline] { (Branch: branch1)  
+  [Pipeline] { (Branch: branch2)  
+  [Pipeline] }  
+  [Pipeline] echo  
+  *[branch1]* in branch1  
+  [Pipeline] sleep  
+  *[branch1]* Sleeping for 1 sec  
+  [Pipeline] echo  
+  *[branch2]* in branch2  
+  [Pipeline] sleep  
   *[branch2]* Sleeping for 1 sec
 
 - to filter logs by branchName
 
-  *[branch1]* in branch1
+  *[branch1]* in branch1  
   *[branch1]* Sleeping for 1 sec
 
 - to show name of parent branches (parent branch first) for nested branches
@@ -83,7 +83,7 @@ in Jenkinsfile import library like this
 
   * `hideVT100 = true` : hide the VT100 markups in raw logs
 
-    cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html
+    cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html  
     cf https://issues.jenkins-ci.org/browse/JENKINS-48344
 
 * examples:
@@ -101,22 +101,11 @@ in Jenkinsfile import library like this
 
   * get logs for branch2 without parents or nested branches markups:
 
-    ```String logsBranch2 = logparser.getLogsWithBranchInfo(
-           filter: 'branch2',
-           markNestedFiltered:false,
-           showParents:false
-       )```
+    ```String logsBranch2 = logparser.getLogsWithBranchInfo(filter: 'branch2', markNestedFiltered: false, showParents: false)```
 
   * archive logs for branch2 without parents or nested branches markups:
 
-    ```logparser.archiveLogsWithBranchInfo(
-           'logsBranch2.txt',
-           [
-               filter: 'branch2',
-               markNestedFiltered: false,
-               showParents: false
-           ]
-       )```
+    ```logparser.archiveLogsWithBranchInfo('logsBranch2.txt', [filter: 'branch2', markNestedFiltered: false, showParents: false])```
 
   * get full logs with VT100 markups:
 
