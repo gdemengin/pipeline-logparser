@@ -7,11 +7,23 @@ a library to parse and filter logs
 it allows
 - to add branch prefix [branchName] in front of each line of the logs belonging to a parallel branch
 
+  ```
+  parallel(
+    branch1: {
+      echo 'in branch1'
+      sleep 1
+    },
+    branch2: {
+      echo 'in branch2'
+      sleep 1
+    }
+  )
+  ```
+
   > [Pipeline] Start of Pipeline  
   > [Pipeline] parallel  
   > [Pipeline] { (Branch: branch1)  
   > [Pipeline] { (Branch: branch2)  
-  > [Pipeline] }  
   > [Pipeline] echo  
   > **[branch1]** in branch1  
   > [Pipeline] sleep  
@@ -19,7 +31,10 @@ it allows
   > [Pipeline] echo  
   > **[branch2]** in branch2  
   > [Pipeline] sleep  
-  > **[branch2]** Sleeping for 1 sec
+  > **[branch2]** Sleeping for 1 sec  
+  > [Pipeline] }  
+  > [Pipeline] }  
+  > [Pipeline] // parallel
 
 - to filter logs by branchName
 
@@ -28,13 +43,52 @@ it allows
 
 - to show name of parent branches (parent branch first) for nested branches
 
-  > **[branch2]** [branch21] in branch2.branch21
+  ```
+  parallel(
+    branch1: {
+      echo 'in branch1'
+    },
+    branch2: {
+      echo 'in branch2'
+      parallel(
+        branch21: {
+          echo 'in branch2.branch21'
+        },
+        branch22: {
+          echo 'in branch2.branch22'
+        }
+      )
+    }
+  )
+  ```
 
-- to hide VT100 markups from raw logs
-
-- to access descriptors of log and branches internal ids
+  > [Pipeline] Start of Pipeline
+  > [Pipeline] parallel
+  > [Pipeline] { (Branch: branch1)
+  > [Pipeline] { (Branch: branch2)
+  > [Pipeline] echo
+  > [branch1] in branch1
+  > [Pipeline] }
+  > [Pipeline] echo
+  > [branch2] in branch2
+  > [Pipeline] parallel
+  > [Pipeline] { (Branch: branch21)
+  > [Pipeline] { (Branch: branch22)
+  > [Pipeline] echo
+  > **[branch2] [branch21]** in branch2.branch21
+  > [Pipeline] }
+  > [Pipeline] echo
+  > **[branch2] [branch22]** in branch2.branch22
+  > [Pipeline] }
+  > [Pipeline] // parallel
+  > [Pipeline] }
+  > [Pipeline] // parallel
 
 - to archive logs in job artifacts (without having to allocate a node : same as ArchiveArtifacts but without `node()` scope)
+
+- to hide or show VT100 markups from raw logs
+
+- to access descriptors of log and branches internal ids
 
 ## installation
 
@@ -114,6 +168,34 @@ in Jenkinsfile import library like this
 
 ## known limitations:
 
+* if logparser functions are called too early the last lines of logs might not be flushed yet and shall not be in the resulting log
+  workaround: before to call logparser add these 2 statements
+  ```
+  // sleep 1s and use echo to flush logs before to call logparser
+  sleep 1
+  echo ''
+  ```
+  this might not always be enough  
+    
+  ```
+  @Library('pipeline-logparser@1.0') _
+
+  parallel(
+    branch1: {
+      echo 'in branch1'
+    },
+    branch2: {
+      echo 'in branch2'
+    }
+  )
+
+  // sleep 1s and use echo to flush logs before to call logparser
+  sleep 1
+  echo ''
+
+  logparser.archiveLogsWithBranchInfo('console.txt')
+  ```
+
 * the output is not fully equivalent to what we had in version 2.25 and earlier of the job-workflow plugin:
   * pipeline code
 
@@ -151,3 +233,4 @@ in Jenkinsfile import library like this
       
     So we lose a bit of information: the lines starting with `[Pipeline]` and which belonged to a specific branch like `[Pipeline] [branch2] echo`  
     It might not be the most important information but sometimes it is useful to know which branch it belongs to
+
