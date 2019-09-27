@@ -112,7 +112,7 @@ in Jenkinsfile import library like this
     ```String logs = logparser.getLogsWithBranchInfo(hideVT100: false)```
 
 
-## known limitations and issues:
+## known limitations:
 
 * the output is not fully equivalent to what we had in version 2.25 and earlier of the job-workflow plugin:
   * pipeline code
@@ -125,33 +125,29 @@ in Jenkinsfile import library like this
     ```
   * 2.25 output:
 
-    ```
-    [Pipeline] parallel
-    [Pipeline] [branch1] { (Branch: branch1)
-    [Pipeline] [branch2] { (Branch: branch2)
-    [Pipeline] [branch1] echo
-    [branch1] in branch1
-    [Pipeline] [branch1] }
-    [Pipeline] [branch2] echo
-    [branch2] in branch2
-    [Pipeline] [branch2] }
-    [Pipeline] // parallel
-    [Pipeline] End of Pipeline
-    ```
+    > [Pipeline] parallel  
+    > [Pipeline] **[branch1]** { (Branch: branch1)  
+    > [Pipeline] **[branch2]** { (Branch: branch2)  
+    > [Pipeline] **[branch1]** echo  
+    > [branch1] in branch1  
+    > [Pipeline] **[branch1]** }  
+    > [Pipeline] **[branch2]** echo  
+    > [branch2] in branch2  
+    > [Pipeline] **[branch2]** }  
+    > [Pipeline] // parallel  
+    > [Pipeline] End of Pipeline
 
   * output using `logparser.getLogsWithBranchInfo()`:
 
-    ```
-    [Pipeline] Start of Pipeline
-    [Pipeline] parallel
-    [Pipeline] { (Branch: branch1)
-    [Pipeline] { (Branch: branch2)
-    [Pipeline] echo
-    [branch1] in branch1
-    [Pipeline] }
-    [Pipeline] echo
-    [branch2] in branch2
-    ```
-
-so we're losing a little bit of information: the [Pipeline] lines which belonged to a specific branch like `[Pipeline] [branch2] echo`
-(it might not be the most important information but sometimes it's painful not to have it)
+    > [Pipeline] Start of Pipeline  
+    > [Pipeline] parallel  
+    > [Pipeline] { (Branch: branch1)  
+    > [Pipeline] { (Branch: branch2)  
+    > [Pipeline] echo  
+    > [branch1] in branch1  
+    > [Pipeline] }  
+    > [Pipeline] echo  
+    > [branch2] in branch2  
+      
+    So we lose a bit of information: the lines starting with `[Pipeline]` and which belonged to a specific branch like `[Pipeline] [branch2] echo`  
+    It might not be the most important information but sometimes it is useful to know which branch it belongs to
