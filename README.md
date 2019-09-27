@@ -62,26 +62,26 @@ it allows
   )
   ```
 
-  > [Pipeline] Start of Pipeline
-  > [Pipeline] parallel
-  > [Pipeline] { (Branch: branch1)
-  > [Pipeline] { (Branch: branch2)
-  > [Pipeline] echo
-  > [branch1] in branch1
-  > [Pipeline] }
-  > [Pipeline] echo
-  > [branch2] in branch2
-  > [Pipeline] parallel
-  > [Pipeline] { (Branch: branch21)
-  > [Pipeline] { (Branch: branch22)
-  > [Pipeline] echo
-  > **[branch2] [branch21]** in branch2.branch21
-  > [Pipeline] }
-  > [Pipeline] echo
-  > **[branch2] [branch22]** in branch2.branch22
-  > [Pipeline] }
-  > [Pipeline] // parallel
-  > [Pipeline] }
+  > [Pipeline] Start of Pipeline  
+  > [Pipeline] parallel  
+  > [Pipeline] { (Branch: branch1)  
+  > [Pipeline] { (Branch: branch2)  
+  > [Pipeline] echo  
+  > [branch1] in branch1  
+  > [Pipeline] }  
+  > [Pipeline] echo  
+  > [branch2] in branch2  
+  > [Pipeline] parallel  
+  > [Pipeline] { (Branch: branch21)  
+  > [Pipeline] { (Branch: branch22)  
+  > [Pipeline] echo  
+  > **[branch2] [branch21]** in branch2.branch21  
+  > [Pipeline] }  
+  > [Pipeline] echo  
+  > **[branch2] [branch22]** in branch2.branch22  
+  > [Pipeline] }  
+  > [Pipeline] // parallel  
+  > [Pipeline] }  
   > [Pipeline] // parallel
 
 - to archive logs in job artifacts (without having to allocate a node : same as ArchiveArtifacts but without `node()` scope)
@@ -175,8 +175,7 @@ in Jenkinsfile import library like this
   sleep 1
   echo ''
   ```
-  this might not always be enough  
-    
+  example:  
   ```
   @Library('pipeline-logparser@1.0') _
 
@@ -195,6 +194,7 @@ in Jenkinsfile import library like this
 
   logparser.archiveLogsWithBranchInfo('console.txt')
   ```
+  NB: this might not always be enough  
 
 * the output is not fully equivalent to what we had in version 2.25 and earlier of the job-workflow plugin:
   * pipeline code
