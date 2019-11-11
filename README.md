@@ -3,6 +3,16 @@ a library to parse and filter logs
   * implementation of https://stackoverflow.com/a/57351397
   * workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304
 
+## change log
+
+* 1.0 (09/2019) first version:
+  - API to parse logs and retrieve maps of id/offsets/branchname
+  - API to get edited logs with branchName (with nested branches, without VT100 markups, etc ...)
+  - API to filter logs by branch name (get logs of a specific branch)
+
+* 1.0.1 (11/2019)
+  - fix parsing issues (when there is only one branch and when logs of 2 branches are mixed without pipeline technical logs in between)
+
 ## content
 it allows
 - to add branch prefix [branchName] in front of each line of the logs belonging to a parallel branch
@@ -92,29 +102,27 @@ it allows
 
 ## installation
 
-it is meant to be used as a "Global Pipeline Library"
-- configured by jenkins administrator ("Manage jenkins > Configure System > Global Pipeline Library")
-- cf https://jenkins.io/doc/book/pipeline/shared-libraries/
+install it as a "Global Pipeline Library" in "Manage jenkins > Configure System > Global Pipeline Library" (cf https://jenkins.io/doc/book/pipeline/shared-libraries/)
 
 ![Global Pipeline Library Configuration](images/gpl-config.png)
 
 Note:
   * it's also possible to copy the code in a Jenkinsfile and use functions from there
-  * but it would imply approving whatever needs to be in "Manage jenkins > In-process Script Approval"
-  * using this library as a "Global Pipeline Library" allows to avoid that
+  * but it would imply approving whatever needs to be in "Manage jenkins > In-process Script Approval" (including some unsafe API's)
+  * using this library as a "Global Pipeline Library" allows to avoid that (avoid getting access to unsafe API's)
 
 ## usage:
 
 ### import logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@1.0') _
+@Library('pipeline-logparser@1.0.1') _
 ```
   * identifier "pipeline-logparser" is the name of the library set by jenkins administrator in configuration: it may be different on your instance
 
 ### use logparser functions:
 
-* `archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])`
+* `void archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])`
 
   archive logs (with branch information) in run artifacts
 
@@ -168,6 +176,8 @@ in Jenkinsfile import library like this
 
 ## known limitations:
 
+* parsing may fail (and cause job to fail) when log is too big (millions of lines, hundreds of MB of logs) because of a lack of heap space
+
 * if logparser functions are called too early the last lines of logs might not be flushed yet and shall not be in the resulting log
   workaround: before to call logparser add these 2 statements
   ```
@@ -177,7 +187,7 @@ in Jenkinsfile import library like this
   ```
   example:  
   ```
-  @Library('pipeline-logparser@1.0') _
+  @Library('pipeline-logparser@1.0.1') _
 
   parallel(
     branch1: {
@@ -196,7 +206,7 @@ in Jenkinsfile import library like this
   ```
   NB: this might not always be enough  
 
-* the output is not fully equivalent to what we had in version 2.25 and earlier of the job-workflow plugin:
+* the output is not fully equivalent to what we had with job-workflow plugin v2.25 and earlier :
   * pipeline code
 
     ```
@@ -205,7 +215,7 @@ in Jenkinsfile import library like this
       branch2: { echo 'in branch2' }
     )
     ```
-  * 2.25 output:
+  * job-workflow plugin v2.25 output:
 
     > [Pipeline] parallel  
     > [Pipeline] **[branch1]** { (Branch: branch1)  
