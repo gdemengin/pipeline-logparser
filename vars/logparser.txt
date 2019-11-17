@@ -114,6 +114,7 @@
                             <li>
                                 <b>show VT100 markups</b> (hidden by default as they make raw log hard to read) with option <code>hideVT100=false</code><br>
                                 <code><br>
+                                    &nbsp;&nbsp;// use node to make sure VT100 markups are in the logs<br>
                                     &nbsp;&nbsp;node {<br>
                                     &nbsp;&nbsp;&nbsp;&nbsp;def logs = logparser.getLogsWithBranchInfo(hideVT100: false)<br>
                                     &nbsp;&nbsp;&nbsp;&nbsp;assert logs ==~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/<br>
@@ -228,7 +229,7 @@
                                 result:<br>
                                 <code><br>
                                     &nbsp;&nbsp;[branch2] in branch2<br>
-                                    &nbsp;&nbsp;&lt;nested branch [branch2.branch21]&gt;<br>
+                                    &nbsp;&nbsp;&lt;nested branch [branch2] [branch21]&gt;<br>
                                 </code><br>
                             </li>
                             <li>
@@ -248,12 +249,12 @@
                             <li>
                                 <b>filter logs not in any branch</b><br>
                                 <code><br>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;echo 'not in any branch'<br>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;parallel (<br>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;)<br>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;print logparser.getLogsWithBranchInfo(filter: [ null ])<br>
+                                    &nbsp;&nbsp;echo 'not in any branch'<br>
+                                    &nbsp;&nbsp;parallel (<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                                    &nbsp;&nbsp;)<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo(filter: [ null ])<br>
                                 </code><br>
                                 result:<br>
                                 <code><br>
@@ -263,6 +264,17 @@
                                 </code><br>
                             </li>
                         </ul>
+                    </li>
+                    <li>
+                        <b>get logs from another job/run</b><br>
+                        <code><br>
+                            &nbsp;&nbsp;// get RunWrapper for current job last stable run<br>
+                            &nbsp;&nbsp;// using https://github.com/gdemengin/pipeline-whitelist<br>
+                            &nbsp;&nbsp;@Library('pipeline-whitelist@2.0.1') _<br>
+                            &nbsp;&nbsp;def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))<br>
+                            &nbsp;&nbsp;<br>
+                            &nbsp;&nbsp;def otherBuildLogs = logparser.getLogsWithBranchInfo([:], otherBuild)<br>
+                        </code><br>
                     </li>
                 </ul>
             </p>
@@ -275,7 +287,7 @@
         <dd>
             <p>
                 get pipeline steps tree, with links to logs, and information about parallel branches and stages<br>
-                layed out as a list with each element a map wth step information to traverse the tree:
+                layed out as a list with each element a map of step information to traverse the tree:
                 <ul>
                     <li>
                         <b><code>id</code></b> : the id of the step
@@ -302,34 +314,102 @@
                         <b><code>log</code></b> : url to the logs (null if no log)
                     </li>
                 </ul>
-                example<br>
-                <code><br>
-                    &nbsp;&nbsp;stage ('stage1') {<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;parallel (<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;)<br>
-                    &nbsp;&nbsp;}<br>
-                    &nbsp;&nbsp;print logparser.getPipelineStepsUrls()<br>
-                </code><br>
-                result:<br>
-                <code><br>
-                    &nbsp;&nbsp;[<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:2, name:null, stage:false, parents:[], parent:null, children:[3, 15], url:https://mydomain.com/job/myjob/28/execution/node/2/, log:null]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:3, name:null, stage:false, parents:[2], parent:2, children:[4, 14], url:https://mydomain.com/job/myjob/28/execution/node/3/, log:https://mydomain.com/job/myjob/28/execution/node/3/log]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:4, name:stage1, stage:true, parents:[3, 2], parent:3, children:[5, 13], url:https://mydomain.com/job/myjob/28/execution/node/4/, log:null]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:5, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[7, 8, 10, 12], url:https://mydomain.com/job/myjob/28/execution/node/5/, log:https://mydomain.com/job/myjob/28/execution/node/5/log]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:7, name:branch1, stage:false, parents:[5, 4, 3, 2], parent:5, children:[9], url:https://mydomain.com/job/myjob/28/execution/node/7/, log:null]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:9, name:null, stage:false, parents:[7, 5, 4, 3, 2], parent:7, children:[], url:https://mydomain.com/job/myjob/28/execution/node/9/, log:https://mydomain.com/job/myjob/28/execution/node/9/log]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:8, name:branch2, stage:false, parents:[5, 4, 3, 2], parent:5, children:[11], url:https://mydomain.com/job/myjob/28/execution/node/8/, log:null]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:11, name:null, stage:false, parents:[8, 5, 4, 3, 2], parent:8, children:[], url:https://mydomain.com/job/myjob/28/execution/node/11/, log:https://mydomain.com/job/myjob/28/execution/node/11/log]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:10, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[], url:https://mydomain.com/job/myjob/28/execution/node/10/, log:null]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:12, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[], url:https://mydomain.com/job/myjob/28/execution/node/12/, log:null]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:13, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[], url:https://mydomain.com/job/myjob/28/execution/node/13/, log:null]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:14, name:null, stage:false, parents:[3, 2], parent:3, children:[], url:https://mydomain.com/job/myjob/28/execution/node/14/, log:null]<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;[id:15, name:null, stage:false, parents:[2], parent:2, children:[], url:https://mydomain.com/job/myjob/28/execution/node/15/, log:null]<br>
-                    &nbsp;&nbsp;]
-                </code><br>
+                examples<br>
+                <ul>
+                    <li>
+                        <b>from current run</b><br>
+                        <code><br>
+                            &nbsp;&nbsp;stage ('stage1') {<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;parallel (<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;)<br>
+                            &nbsp;&nbsp;}<br>
+                            &nbsp;&nbsp;def stepsTree = logparser.getPipelineStepsUrls()<br>
+                        </code><br>
+                        result:<br>
+                        <code><br>
+                            &nbsp;&nbsp;stepsTree = [<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:2, name:null, stage:false, parents:[], parent:null, children:[3, 15],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/2/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:3, name:null, stage:false, parents:[2], parent:2, children:[4, 14],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/3/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:https://mydomain.com/job/myjob/28/execution/node/3/log<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:4, name:stage1, stage:true, parents:[3, 2], parent:3, children:[5, 13],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/4/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:5, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[7, 8, 10, 12],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/5/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:https://mydomain.com/job/myjob/28/execution/node/5/log<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:7, name:branch1, stage:false, parents:[5, 4, 3, 2], parent:5, children:[9],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/7/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:9, name:null, stage:false, parents:[7, 5, 4, 3, 2], parent:7, children:[],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/9/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:https://mydomain.com/job/myjob/28/execution/node/9/log<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:8, name:branch2, stage:false, parents:[5, 4, 3, 2], parent:5, children:[11],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/8/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:11, name:null, stage:false, parents:[8, 5, 4, 3, 2], parent:8, children:[],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/11/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:https://mydomain.com/job/myjob/28/execution/node/11/log<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:10, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/10/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:12, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/12/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:13, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/13/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:14, name:null, stage:false, parents:[3, 2], parent:3, children:[],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/14/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:15, name:null, stage:false, parents:[2], parent:2, children:[],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/job/myjob/28/execution/node/15/,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;]<br>
+                            &nbsp;&nbsp;]<br>
+                        </code><br>
+                    </li>
+                    <li>
+                        <b>from another job/run</b><br>
+                        <code><br>
+                            &nbsp;&nbsp;// get RunWrapper for current job last stable run<br>
+                            &nbsp;&nbsp;// using https://github.com/gdemengin/pipeline-whitelist<br>
+                            &nbsp;&nbsp;@Library('pipeline-whitelist@2.0.1') _<br>
+                            &nbsp;&nbsp;def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))<br>
+                            &nbsp;&nbsp;<br>
+                            &nbsp;&nbsp;def stepsTree = logparser.getPipelineStepsUrls(otherBuild)<br>
+                        </code><br>
+                    </li>
+                </ul>
             </p>
         </dd>
     </dl>

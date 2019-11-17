@@ -33,7 +33,7 @@ java.util.ArrayList _getNodeTree(build = currentBuild, _node = null, _branches=[
     def stages = _stages.collect { it }
 
     if (node == null) {
-        def rootNode = flowGraph.nodes.findAll{ it.enclosingId == null }
+        def rootNode = flowGraph.nodes.findAll{ it.enclosingId == null && it.class == org.jenkinsci.plugins.workflow.graph.FlowStartNode }
         assert rootNode.size() == 1
         node = rootNode[0]
         branches += [ node.id ]
@@ -108,7 +108,7 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
 //      if false "[branch21] log from branch21 nested in branch2"
 // - with a marker showing nested branches if options.markNestedFiltered is true (default) and if filterBranchName is not null
 //   example:
-//      "<nested branch [branch2.branch21]"
+//      "<nested branch [branch2] [branch21]"
 // - without VT100 markups if options.hideVT100 is true (default)
 // - without Pipeline technical logs if options.hidePipeline is true (default)
 // - with stage information if showStage is true (default false)
@@ -221,7 +221,13 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
             }
         } else if (options.markNestedFiltered && it.name != null && it.parents.findAll { keep."${it}" }.size() > 0) {
             // branch is not kept (not in filter) but one of its parent branch is kept: record it as filtered
-            output += "<nested branch [${branches.reverse().join('.')}]>\n"
+            def prefix = null
+            if (options.showParents) {
+                prefix = branches.reverse().collect{ "[$it]" }.join(' ')
+            } else {
+                prefix = "[${branches[0]}]"
+            }
+            output += "<nested branch ${prefix}>\n"
         }
         // else none of the parent branches is kept, skip this one entirely
     }
