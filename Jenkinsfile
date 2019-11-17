@@ -2,7 +2,7 @@
 
 
 // import logparser library
-@Library('pipeline-logparser@1.1') _
+@Library('pipeline-logparser@stage') _
 
 // ===============
 // = constants   =
@@ -158,8 +158,10 @@ def runBranchesWithManyLines(nblines, expectedLogMap) {
         print "ending ${b}"
         expectedLogMap."${b}" += "ending ${b}\n"
    }
-   print "testing branches with ${nblines}"
-   expectedLogMap.'null' += "testing branches with ${nblines}\n"
+
+   def line = "testing branches with ${nblines}"
+   print line
+   expectedLogMap.'null' += line + '\n'
 
     expectedLogMap.'one' = ''
     expectedLogMap.'two' = ''
@@ -172,53 +174,85 @@ def runBranchesWithManyLines(nblines, expectedLogMap) {
     expectedLogMap.'null' += '[ filtered XX bytes of logs for nested branches: one two ] (...)\n'
 }
 
-def runStagesAndBranches(expectedLogMap) {
-    def line
+def runStagesAndBranches(expectedLogMap, expectedLogMapWithStages) {
+    def line = 'testing stages'
+    print line
+    expectedLogMap.'null' += line + '\n'
+    expectedLogMapWithStages.'null' += line + '\n'
 
+    expectedLogMapWithStages.'logparser-stage1' = ''
     stage('logparser-stage1') {
         line='in stage1'
         echo line
         expectedLogMap.'null' += line + '\n'
+        expectedLogMapWithStages.'logparser-stage1' += line + '\n'
     }
+
+    expectedLogMapWithStages.'logparser-stage2' = ''
     stage('logparser-stage2') {
         expectedLogMap.'s2b1' = ''
         expectedLogMap.'s2b2' = ''
+        expectedLogMapWithStages.'logparser-stage2.s2b1' = ''
+        expectedLogMapWithStages.'logparser-stage2.s2b2' = ''
+        expectedLogMapWithStages.'logparser-stage2.logparser-stage3' = ''
+
+        stage('logparser-stage3') {
+            line='in stage2.stage3'
+            echo line
+            expectedLogMap.'null' += line + '\n'
+            expectedLogMapWithStages.'logparser-stage2.logparser-stage3' += line + '\n'
+        }
 
         parallel 's2b1': {
             line='in stage2.s2b1'
             echo line
             expectedLogMap.'s2b1' += line + '\n'
+            expectedLogMapWithStages.'logparser-stage2.s2b1' += line + '\n'
         }, 's2b2': {
             line='in stage2.s2b2'
             echo line
             expectedLogMap.'s2b2' += line + '\n'
+            expectedLogMapWithStages.'logparser-stage2.s2b2' += line + '\n'
         }
+
         expectedLogMap.'null' += '[ filtered XX bytes of logs for nested branches: s2b1 s2b2 ] (...)\n'
+        expectedLogMapWithStages.'logparser-stage2' += '[ filtered XX bytes of logs for nested branches: logparser-stage2.logparser-stage3 logparser-stage2.s2b1 logparser-stage2.s2b2 ] (...)\n'
     }
+    expectedLogMapWithStages.'null' += '[ filtered XX bytes of logs for nested branches: logparser-stage1 logparser-stage2.logparser-stage3 logparser-stage2.s2b1 logparser-stage2.s2b2 ] (...)\n'
 }
 
 // =======================================
 // = parse logs and archive/check them   =
 // =======================================
 
+def checkLogs(log1, editedLog1, name1, log2, editedLog2, name2) {
+    def tocmp1 = editedLog1 == null ? log1 : editedLog1
+    def tocmp2 = editedLog2 == null ? log2 : editedLog2
+    if (tocmp1 != tocmp2) {
+        // TODO: print side by side differences
+        print "${name1} = '''\\\n${log1}'''"
+        if (editedLog1 != null && log1 != editedLog1) {
+            print "${name1} (edited) ='''\\\n${editedLog1}'''"
+        }
+        print "${name2} = '''\\\n${log2}'''"
+        if (editedLog2 != null && log2 != editedLog2) {
+            print "${name2} (edited) ='''\\\n${editedLog2}'''"
+        }
+        error "${name1} and ${name2} differ"
+    } else {
+        print "${name1} and ${name2} are identical"
+    }
+}
+
 def checkBranchLogs(logs, name, expected) {
-    print "logs.'${name}'='''\\\n${logs}'''"
     if (newLogFormat) {
         // expected do not contain the actual number of bytes to keep it simple
         def editedLogs = logs.replaceAll(/(?m)^\[ filtered [0-9]* bytes of logs/, '[ filtered XX bytes of logs')
-        if (logs != editedLogs) {
-            print "editedLogs.'${name}'='''\\\n${editedLogs}'''"
-        }
-        print "expected.'${name}'='''\\\n${expected}'''"
-        assert editedLogs == expected
+        checkLogs(logs, editedLogs, "logs.'${name}'", expected, null, 'expected')
     } else {
-        print "expected.'${name}'='''\\\n${expected}'''"
         // old version does not generate filtering markups
         def editedExpected = expected.replaceAll(/(?m)^\[ filtered XX bytes of logs.*$\n/, '')
-        if (expected != editedExpected) {
-            print "editedExpected.'${name}'='''\\\n${editedExpected}'''"
-        }
-        assert editedExpected == logs
+        checkLogs(logs, null, "logs.'${name}'", expected, editedExpected, 'expected')
     }
 }
 
@@ -226,8 +260,9 @@ def extractMainLogs(mainLogs, begin, end) {
     // count not allowed with older versions
     //assert mainLogs.count("\n${begin}\n").size() == 1
     //assert mainLogs.count("\n${end}\n").size() == 1
-    assert mainLogs.split("\n${begin}\n").size() - 1 == 1
-    assert mainLogs.split("\n${end}\n").size() - 1 == 1
+    // use split to count
+    assert mainLogs.split("\n${begin}\n").size() == 2
+    assert mainLogs.split("\n${end}\n").size() == 2
     return mainLogs.replaceFirst(/(?s).*\n${begin}\n(.*\n)${end}\n.*/, /$1/)
 }
 
@@ -236,7 +271,6 @@ def removeFilters(logs) {
 }
 
 def expectedBranchLogs(expectedLogMap, key, branchInfo) {
-    print "expectedLogMap.'${key}'='''\\\n${ expectedLogMap."${key}" }'''"
     if (expectedLogMap."${key}".size() == 0 ) {
         return ''
     }
@@ -254,13 +288,10 @@ def expectedBranchLogs(expectedLogMap, key, branchInfo) {
 def unsortedCompare(log1, log2) {
     def sortedLog1 = log1.split('\n', -1).sort().join('\n')
     def sortedLog2 = log2.split('\n', -1).sort().join('\n')
-    print "sortedLog1='''\\\n${sortedLog1}'''"
-    print "sortedLog2='''\\\n${sortedLog2}'''"
-
-    assert sortedLog1 == sortedLog2
+    checkLogs(sortedLog1, null, 'sortedLog1', sortedLog2, null, 'sortedLog2')
 }
 
-def parseLogs(expectedLogMap, begin, end) {
+def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
 
     // sleep 1s and use echo to flush logs before to call logparser
     // might not be enough
@@ -309,6 +340,14 @@ def parseLogs(expectedLogMap, begin, end) {
     def logsStar = logparser.getLogsWithBranchInfo(filter:[ '.*' ])
     def logsFullStar = logparser.getLogsWithBranchInfo(filter:[ null, '.*' ])
 
+    // stages
+    def logsNoBranchWithStages = logparser.getLogsWithBranchInfo(filter:[null], showStages:true)
+    def logsS2b1WithStages = logparser.getLogsWithBranchInfo(filter:[ 's2b1' ], showStages:true)
+    def logsS2b2WithStages = logparser.getLogsWithBranchInfo(filter:[ 's2b2' ], showStages:true)
+    def logsStage1 = logparser.getLogsWithBranchInfo(filter:[ 'logparser-stage1' ], showStages:true)
+    def logsStage2 = logparser.getLogsWithBranchInfo(filter:[ 'logparser-stage2' ], showStages:true)
+    def logsStage3 = logparser.getLogsWithBranchInfo(filter:[ 'logparser-stage3' ], showStages:true)
+
     // other options
     def fullLogVT100 = logparser.getLogsWithBranchInfo([hideVT100:false])
     def fullLogPipeline = logparser.getLogsWithBranchInfo([hidePipeline:false])
@@ -316,7 +355,6 @@ def parseLogs(expectedLogMap, begin, end) {
     def fullLogNoNest = logparser.getLogsWithBranchInfo([markNestedFiltered:false])
     def logsBranch2NoNest = logparser.getLogsWithBranchInfo(filter:['branch2'], markNestedFiltered:false)
     def logsBranch21NoParent = logparser.getLogsWithBranchInfo(filter:['branch21'], showParents:false)
-
 
     // 3/ check log content
 
@@ -339,6 +377,15 @@ def parseLogs(expectedLogMap, begin, end) {
     checkBranchLogs(logsTwo, 'two', expectedBranchLogs(expectedLogMap, 'two', '[two] '))
     checkBranchLogs(logsS2b1, 's2b1', expectedBranchLogs(expectedLogMap, 's2b1', '[s2b1] '))
     checkBranchLogs(logsS2b2, 's2b2', expectedBranchLogs(expectedLogMap, 's2b2', '[s2b2] '))
+
+    if (newLogFormat) {
+        checkBranchLogs(extractMainLogs(logsNoBranchWithStages, begin, end), 'null', expectedLogMapWithStages.'null')
+        checkBranchLogs(logsS2b1WithStages, 's2b1', expectedBranchLogs(expectedLogMapWithStages, 'logparser-stage2.s2b1', '[logparser-stage2] [s2b1] '))
+        checkBranchLogs(logsS2b2WithStages, 's2b2', expectedBranchLogs(expectedLogMapWithStages, 'logparser-stage2.s2b2', '[logparser-stage2] [s2b2] '))
+        checkBranchLogs(logsStage1, 'logparser-stage1', expectedBranchLogs(expectedLogMapWithStages, 'logparser-stage1', '[logparser-stage1] '))
+        checkBranchLogs(logsStage2, 'logparser-stage2', expectedBranchLogs(expectedLogMapWithStages, 'logparser-stage2', '[logparser-stage2] '))
+        checkBranchLogs(logsStage3, 'logparser-stage3', expectedBranchLogs(expectedLogMapWithStages, 'logparser-stage2.logparser-stage3', '[logparser-stage2] [logparser-stage3] '))
+    }
 
     // check full logs
     print 'checking fullLog contain the same lines as each branch (different order)'
@@ -404,12 +451,13 @@ def parseLogs(expectedLogMap, begin, end) {
             logsS2b2
         )
     )
-    print "logsFullStar='''\\\n${extractMainLogs(logsFullStar, begin, end)}'''"
-    print "fullLog='''\\\n${extractMainLogs(fullLog, begin, end)}'''"
-    assert extractMainLogs(logsFullStar, begin, end) == extractMainLogs(fullLog, begin, end)
+
+    checkLogs(extractMainLogs(logsFullStar, begin, end), null, 'logsFullStar', extractMainLogs(fullLog, begin, end), null, 'fullLog')
+
 
     // check other options
     // this one might fail when job started by timer
+    // TODO retest that
     // TODO: test it with repeatable call
     // assert fullLogVT100 ==~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/
     assert fullLog      !=~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/
@@ -417,19 +465,19 @@ def parseLogs(expectedLogMap, begin, end) {
 
     assert fullLogPipeline ==~ /(?s).*\[Pipeline\] .*/
     assert fullLog         !=~ /(?s).*\[Pipeline\] .*/
-    assert fullLogPipeline.replaceAll(/(?m)^\[Pipeline\] .*$\n/, '') == fullLog
+    checkLogs(fullLogPipeline.replaceAll(/(?m)^\[Pipeline\] .*$\n/, ''), null, 'fullLogPipeline without pipeline', fullLog, null, 'fullLog')
 
     assert fullLogPipelineVT100 ==~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/
-    assert fullLogPipelineVT100.replaceAll(/\x1B\[8m.*?\x1B\[0m/, '').replaceAll(/(?m)^\[Pipeline\] .*$\n/, '') == fullLog
+    checkLogs(fullLogPipelineVT100.replaceAll(/\x1B\[8m.*?\x1B\[0m/, '').replaceAll(/(?m)^\[Pipeline\] .*$\n/, ''), null, 'fullLogPipelineVT100 without pipeline', fullLog, null, 'fullLog')
 
-    assert fullLogNoNest == fullLog
+    checkLogs(fullLogNoNest, null, 'fullLogNoNest', fullLog, null, 'fullLog')
 
     if (newLogFormat) {
         assert logsBranch2NoNest !=~ /(?s).*\[ filtered [0-9]* bytes of logs .*/
         assert logsBranch2       ==~ /(?s).*\[ filtered [0-9]* bytes of logs .*/
-        assert logsBranch2NoNest == removeFilters(logsBranch2)
+        checkLogs(logsBranch2NoNest, null, 'logsBranch2NoNest', removeFilters(logsBranch2), null, 'removeFilters(logsBranch2)')
     } else {
-        assert logsBranch2NoNest ==logsBranch2
+        checkLogs(logsBranch2NoNest, null, 'logsBranch2NoNest', logsBranch2, null, 'logsBranch2')
     }
 
     checkBranchLogs(logsBranch21NoParent, 'branch21', expectedBranchLogs(expectedLogMap, 'branch2.branch21', '[branch21] '))
@@ -449,11 +497,13 @@ def testLogparser() {
     runBranches(expectedLogMap)
     runSingleBranches(expectedLogMap)
     runBranchesWithManyLines(100, expectedLogMap)
-    runStagesAndBranches(expectedLogMap)
+    // deep copy
+    def expectedLogMapWithStages = expectedLogMap.collectEntries{ k,v -> [ "$k".toString(), "$v".toString() ] }
+    runStagesAndBranches(expectedLogMap, expectedLogMapWithStages)
 
     print end
 
-    parseLogs(expectedLogMap, begin, end)
+    parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end)
 
     if (RUN_FULL_LOGPARSER_TEST) {
         // test with 10 million lines (multiple hours of test, may fail if not enough heap space)
@@ -475,6 +525,4 @@ def testLogparser() {
 // = run tests   =
 // ===============
 
-stage('testLogparser') {
-    testLogparser()
-}
+testLogparser()

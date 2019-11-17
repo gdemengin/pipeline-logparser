@@ -70,7 +70,7 @@ it allows:
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@1.1') _
+@Library('pipeline-logparser@stage') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
 * _it may be different on your instance_
@@ -84,7 +84,7 @@ _identifier "pipeline-logparser" is the name of the library set by jenkins admin
   def mylog = logparser.getLogsWithBranchInfo()
   ```
 
-- see complete documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/1.1/vars/logparser.txt)  
+- see complete documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/stage/vars/logparser.txt)  
 also available in $JOB_URL/pipeline-syntax/globals#logparser (visible only after the library has been imported once)
 
 
@@ -113,7 +113,7 @@ Note:
   ```
   example:  
   ```
-  @Library('pipeline-logparser@1.1') _
+  @Library('pipeline-logparser@stage') _
 
   parallel(
     branch1: { echo 'in branch1' },
@@ -183,3 +183,6 @@ Note:
   - ability to filter main thread (using filter = [null])
   - new option hidePipeline to filter Pipeline technical logs (default value true to hide them)
   - fix parsing issues with old version of workflow-job plugin
+
+* stage branch (??/2020)
+  - handle logs from stages and add option to show/filter them

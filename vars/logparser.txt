@@ -26,7 +26,10 @@
                     </li>
                     <li>
                         <b><code>showParents = true</code></b> : show name of parent branches<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;example: <code>"<b>[branch2]</b> [branch21] in branch21 nested in branch2"</code>"
+                        &nbsp;&nbsp;&nbsp;&nbsp;example: <code>"<b>[branch2]</b> [branch21] in branch21 nested in branch2"</code>
+                    </li>
+                    <li>
+                        <b><code>showStages = false</code></b> : consider stages as if they are standalone parallel steps (and use them when filter and showParents are set)
                     </li>
                     <li>
                         <b><code>markNestedFiltered = true</code></b> : add name of nested branches filtered out<br>
