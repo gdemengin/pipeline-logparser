@@ -3,16 +3,18 @@
 <!-- documentation for $JOB_URL//pipeline-syntax/globals -->
 <div>
     <p>
-        <a href="https://github.com/gdemengin/pipeline-logparser">pipeline-logparser</a> a library to parse and filter logs
+        <a href="https://github.com/gdemengin/pipeline-logparser">pipeline-logparser</a> a library to parse and filter logs, and to retrieve log urls
     </p>
     <dl>
         <dt>
-            <b><code>String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])</code></b><br>
+            <b><code>String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], RunWrapper build = currentBuild)</code></b><br>
+            <br>
             <b><code>void archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])</code></b>
         </dt>
         <dd>
             <p>
-                get or archive logs (with branch name on each branch line) in run artifacts<br>
+                get logs with branch name on each branch line<br>
+                or archive them in run artifacts<br>
                 <br>
                 available options:
                 <ul>
@@ -26,206 +28,308 @@
                     </li>
                     <li>
                         <b><code>showParents = true</code></b> : show name of parent branches<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;example: <code>"<b>[branch2]</b> [branch21] in branch21 nested in branch2"</code>
+                        &nbsp;&nbsp;example: <code>"<b>[branch2]</b> [branch21] in branch21 nested in branch2"</code>
                     </li>
                     <li>
-                        <b><code>showStages = false</code></b> : consider stages as if they are standalone parallel steps (and use them when filter and showParents are set)
+                        <b><code>showStages = false</code></b> : show name of stages (and use them when filter and showParents are set)
                     </li>
                     <li>
                         <b><code>markNestedFiltered = true</code></b> : add name of nested branches filtered out<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;example: <code>"[ filtered 315 bytes of logs for nested branches: branch2.branch21 branch2.branch22 ] (...)"</code>
+                        &nbsp;&nbsp;example: <code>"&lt;nested branch [branch2]&gt;"</code>
                     </li>
                     <li>
-                        <b><code>hidePipeline = true</code></b> : hide the Pipeline technical logs (lines starting with [Pipeline]
+                        <b><code>hidePipeline = true</code></b> : hide the Pipeline technical logs (lines starting with [Pipeline])
                     </li>
                     <li>
                         <b><code>hideVT100 = true</code></b> : hide the VT100 markups in logs<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;cf https://issues.jenkins-ci.org/browse/JENKINS-48344
+                        &nbsp;&nbsp;cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html<br>
+                        &nbsp;&nbsp;cf https://issues.jenkins-ci.org/browse/JENKINS-48344
                     </li>
                 </ul>
                 examples<br>
-                <p>
-                    given this pipeline:<br>
-                    <br>
-                    <code>
-                    &nbsp;&nbsp;&nbsp;&nbsp;echo 'not in any branch'<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;parallel (<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch2: {<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;echo 'in branch2'<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;parallel (<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch21: { echo 'in branch2.branch21' }<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;)<br>
-                    </code>
-                </p>
                 <ul>
                     <li>
-                        get full logs:
-                        <p>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logs = logparser.getLogsWithBranchInfo()</code></b>
-                        </p>
-                        <p>
-                            <code>
-                            &nbsp;&nbsp;&nbsp;&nbsp;print logs<br>
-                            <br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;not in any branch<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch1]</b> in branch1<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch2]</b> in branch2<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch2] [branch21]</b> in branch2.branch21<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;Finished: SUCCESS
-                            </code>
-                        </p>
+                        <b>retrieve logs with branch info</b>
+                        <ul>
+                            <li>
+                                <b>add branch prefix [branchName] in front of each line for that branch</b><br>
+                                <code><br>
+                                    &nbsp;&nbsp;echo 'not in any branch'<br>
+                                    &nbsp;&nbsp;parallel (<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                                    &nbsp;&nbsp;)<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo()<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;not in any branch<br>
+                                    &nbsp;&nbsp;[branch1] in branch1<br>
+                                    &nbsp;&nbsp;[branch2] in branch2<br>
+                                </code><br>
+                            </li>
+                            <li>
+                                <b>show stage name</b> with option <code>showStages=true</code><br>
+                                <code><br>
+                                    &nbsp;&nbsp;stage ('stage1') {<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;echo 'in stage 1'<br>
+                                    &nbsp;&nbsp;}<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo(showStages: true)<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;[stage1] in stage 1<br>
+                                </code><br>
+                            </li>
+                            <li>
+                                <b>show parent branch name</b> (parent branch first) for nested branches<br>
+                                <code><br>
+                                    &nbsp;&nbsp;parallel branch2: {<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;echo 'in branch2'<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;parallel branch21: { echo 'in branch2.branch21' }<br>
+                                    &nbsp;&nbsp;}<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo()<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;[branch2] in branch2<br>
+                                    &nbsp;&nbsp;[branch2] [branch21] in branch2.branch21<br>
+                                </code><br>
+                            </li>
+                            <li>
+                                <b>hide parent branch name</b> with option <code>showParents=false</code><br>
+                                <code><br>
+                                    &nbsp;&nbsp;parallel branch2: {<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;echo 'in branch2'<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;parallel branch21: { echo 'in branch2.branch21' }<br>
+                                    &nbsp;&nbsp;}<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo(showParents: false)<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;[branch2] in branch2<br>
+                                    &nbsp;&nbsp;[branch21] in branch2.branch21<br>
+                                </code><br>
+                            </li>
+                            <li>
+                                <b>show VT100 markups</b> (hidden by default as they make raw log hard to read) with option <code>hideVT100=false</code><br>
+                                <code><br>
+                                    &nbsp;&nbsp;node {<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;def logs = logparser.getLogsWithBranchInfo(hideVT100: false)<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;assert logs ==~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/<br>
+                                    &nbsp;&nbsp;}<br>
+                                </code><br>
+                            </li>
+                            <li>
+                                <b>show Pipeline technical log lines</b> (starting with [Pipeline]) with option <code>hidePipeline=false</code><br>
+                                <code><br>
+                                    &nbsp;&nbsp;echo 'not in any branch'<br>
+                                    &nbsp;&nbsp;parallel (<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                                    &nbsp;&nbsp;)<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo(hidePipeline: false)<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;[Pipeline] Start of Pipeline<br>
+                                    &nbsp;&nbsp;[Pipeline] echo<br>
+                                    &nbsp;&nbsp;not in any branch<br>
+                                    &nbsp;&nbsp;[Pipeline] parallel<br>
+                                    &nbsp;&nbsp;[Pipeline] [branch1] { (Branch: branch1)<br>
+                                    &nbsp;&nbsp;[Pipeline] [branch1] echo<br>
+                                    &nbsp;&nbsp;[branch1] in branch1<br>
+                                    &nbsp;&nbsp;[Pipeline] [branch2] { (Branch: branch2)<br>
+                                    &nbsp;&nbsp;[Pipeline] [branch2] echo<br>
+                                    &nbsp;&nbsp;[branch2] in branch2<br>
+                                    &nbsp;&nbsp;[Pipeline] }<br>
+                                    &nbsp;&nbsp;[Pipeline] }<br>
+                                    &nbsp;&nbsp;[Pipeline] // parallel<br>
+                                </code><br>
+                            </li>
+                        </ul>
                     </li>
                     <li>
-                        archive full logs as $JOB_URL/&lt;runId&gt;/artifact/consoleText.txt:
-                        <p>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b><code>logparser.archiveLogsWithBranchInfo('consoleText.txt')</code></b>
-                        </p>
-                        <p>
-                            <code>
-                            &nbsp;&nbsp;&nbsp;&nbsp;> cat consoleText.txt<br>
-                            <br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;not in any branch<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch1]</b> in branch1<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch2]</b> in branch2<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch2] [branch21]</b> in branch2.branch21<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;Finished: SUCCESS
-                            </code>
-                        </p>
+                        <b>archive logs in job artifacts</b> (without having to allocate a node : same as ArchiveArtifacts but without <code>node()</code> scope)<br>
+                        <code><br>
+                            &nbsp;&nbsp;echo 'not in any branch'<br>
+                            &nbsp;&nbsp;parallel (<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                            &nbsp;&nbsp;)<br>
+                            &nbsp;&nbsp;logparser.archiveLogsWithBranchInfo('logs.txt')<br>
+                        </code><br>
+                        result: logs.txt in $BUILD_URL/artifact with content:<br>
+                        <code><br>
+                            &nbsp;&nbsp;not in any branch<br>
+                            &nbsp;&nbsp;[branch1] in branch1<br>
+                            &nbsp;&nbsp;[branch2] in branch2<br>
+                        </code><br>
                     </li>
                     <li>
-                        get logs from branch2 only:
-                        <p>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logsBranch2 = logparser.getLogsWithBranchInfo(filter: ['branch2'])</code></b>
-                        </p>
-                        <p>
-                            <code>
-                            &nbsp;&nbsp;&nbsp;&nbsp;print logs<br>
-                            <br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch2]</b> in branch2<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[ filtered 19 bytes of logs for nested branches: branch2.branch21 ] (...)</b><br>
-                            </code>
-                        </p>
-                    </li>
-                    <li>
-                        get logs from multiple branches:
-                        <p>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logsBranch1And21 = logparser.getLogsWithBranchInfo(filter: [ 'branch1', 'branch21' ])</code></b>
-                        </p>
-                        <p>
-                            <code>
-                            &nbsp;&nbsp;&nbsp;&nbsp;print logsBranch1And21<br>
-                            <br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch1]</b> in branch1<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch2] [branch21]</b> in branch2.branch21<br>
-                            </code>
-                        </p>
-                    </li>
-                    <li>
-                        get logs from all branches ending with 1 using regex:
-                        <p>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logsEndWith1 = logparser.getLogsWithBranchInfo(filter: [ '.*1' ])</code></b>
-                        </p>
-                        <p>
-                            <code>
-                            &nbsp;&nbsp;&nbsp;&nbsp;print logsEndWith1<br>
-                            <br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch1]</b> in branch1<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch2] [branch21]</b> in branch2.branch21<br>
-                            </code>
-                        </p>
-                    </li>
-                    <li>
-                        get logs from main thread (i.e. from branch null):
-                        <p>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logsMain = logparser.getLogsWithBranchInfo(filter: [ null ])</code></b>
-                        </p>
-                        <p>
-                            <code>
-                            &nbsp;&nbsp;&nbsp;&nbsp;print logsMain<br>
-                            <br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;not in any branch<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;Finished: SUCCESS
-                            </code>
-                        </p>
-                    </li>
-                    <li>
-                        get logs from branch2 without nested branches markups:
-                        <p>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logsBranch2 = logparser.getLogsWithBranchInfo(filter: ['branch2'], markNestedFiltered:false)</code></b>
-                        </p>
-                        <p>
-                            <code>
-                            &nbsp;&nbsp;&nbsp;&nbsp;print logsBranch2<br>
-                            <br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch2]</b> in branch2<br>
-                            </code>
-                        </p>
-                    </li>
-                    <li>
-                        get logs from branch21 without parents (without '[branch2]'):
-                        <p>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logsBranch21 = logparser.getLogsWithBranchInfo(filter: ['branch2'], showParents:false)</code></b>
-                        </p>
-                        <p>
-                            <code>
-                            &nbsp;&nbsp;&nbsp;&nbsp;print logsBranch21<br>
-                            <br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch21]</b> in branch2.branch21<br>
-                            </code>
-                        </p>
-                    </li>
-                    <li>
-                        get full logs with Pipeline logs:<br>
-                        <p>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logs = logparser.getLogsWithBranchInfo(hidePipeline: false)</code></b>
-                        </p>
-                        <p>
-                            <code>
-                            &nbsp;&nbsp;&nbsp;&nbsp;print logs<br>
-                            <br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] Start of Pipeline<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] echo<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;not in any branch<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] parallel<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] { (Branch: branch1)<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] { (Branch: branch2)<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] echo<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch1]</b> in branch1<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] }<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] echo<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch2]</b> in branch2<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] parallel<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] { (Branch: branch21)<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] echo<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b>[branch2] [branch21]</b> in branch2.branch21<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] }<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] // parallel<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] }<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] // parallel<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;[Pipeline] End of Pipeline<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;Finished: SUCCESS
-                            </code>
-                        </p>
-                   </li>
-                   <li>
-                        get full logs with VT100 markups and Pipeline logs:<br>
-                        <p>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<b><code>String logs = logparser.archiveLogsWithBranchInfo('consoleVT100.txt', hidePipeline: false, hideVT100: false)</code></b>
-                        </p>
-                        <p>
-                            <code>
-                            &nbsp;&nbsp;&nbsp;&nbsp;> cat consoleVT100.txt<br>
-                            <br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;ESC[8mha:////4J79gpkn ... wgAAAA==ESC[0m[Pipeline] Start of Pipeline<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;...
-                            </code>
-                        </p>
+                        <b>filter branch logs</b> with option <code>filter=[ list of branches to keep ]</code>
+                        <ul>
+                            <li>
+                                <b>filter by name</b><br>
+                                <code><br>
+                                    &nbsp;&nbsp;echo 'not in any branch'<br>
+                                    &nbsp;&nbsp;parallel (<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                                    &nbsp;&nbsp;)<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo(filter: [ 'branch1' ])<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;[branch1] in branch1<br>
+                                </code><br>
+                            </li>
+                            <li>
+                                <b>filter multiple branches</b><br>
+                                <code><br>
+                                    &nbsp;&nbsp;echo 'not in any branch'<br>
+                                    &nbsp;&nbsp;parallel (<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' },<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch3: { echo 'in branch3' }<br>
+                                    &nbsp;&nbsp;)<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo(filter: [ 'branch1', 'branch3' ])<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;[branch1] in branch1<br>
+                                    &nbsp;&nbsp;[branch3] in branch3<br>
+                                </code><br>
+                            </li>
+                            <li>
+                                <b>filter with regular expression</b><br>
+                                <code><br>
+                                    &nbsp;&nbsp;echo 'not in any branch'<br>
+                                    &nbsp;&nbsp;parallel (<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                                    &nbsp;&nbsp;)<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo(filter: [ '.*2' ])<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;[branch2] in branch2<br>
+                                </code><br>
+                            </li>
+                            <li>
+                                <b>show name of nested branches filtered out</b><br>
+                                <code><br>
+                                    &nbsp;&nbsp;parallel branch2: {<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;echo 'in branch2'<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;parallel branch21: { echo 'in branch2.branch21' }<br>
+                                    &nbsp;&nbsp;}<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo(filter: [ 'branch2' ])<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;[branch2] in branch2<br>
+                                    &nbsp;&nbsp;&lt;nested branch [branch2.branch21]&gt;<br>
+                                </code><br>
+                            </li>
+                            <li>
+                                <b>hide name of nested branches filtered out</b> with option <code>markNestedFiltered=false</code><br>
+                                <code><br>
+                                    &nbsp;&nbsp;parallel branch2: {<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;echo 'in branch2'<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;parallel branch21: { echo 'in branch2.branch21' }<br>
+                                    &nbsp;&nbsp;}<br>
+                                    &nbsp;&nbsp;print logparser.getLogsWithBranchInfo(filter: [ 'branch2' ], markNestedFiltered: false)<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;[branch2] in branch2<br>
+                                </code><br>
+                            </li>
+                            <li>
+                                <b>filter logs not in any branch</b><br>
+                                <code><br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;echo 'not in any branch'<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;parallel (<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;)<br>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;print logparser.getLogsWithBranchInfo(filter: [ null ])<br>
+                                </code><br>
+                                result:<br>
+                                <code><br>
+                                    &nbsp;&nbsp;not in any branch<br>
+                                    &nbsp;&nbsp;&lt;nested branch [branch1]&gt;<br>
+                                    &nbsp;&nbsp;&lt;nested branch [branch2]&gt;<br>
+                                </code><br>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
+            </p>
+        </dd>
+    </dl>
+    <dl>
+        <dt>
+            <b><code>java.util.ArrayList getPipelineStepsUrls(RunWrapper build = currentBuild)</code></b>
+        </dt>
+        <dd>
+            <p>
+                get pipeline steps tree, with links to logs, and information about parallel branches and stages<br>
+                layed out as a list with each element a map wth step information to traverse the tree:
+                <ul>
+                    <li>
+                        <b><code>id</code></b> : the id of the step
+                    </li>
+                    <li>
+                        <b><code>name</code></b> : the name of the step if it is the start of a branch or a stage (null otherwise)
+                    </li>
+                    <li>
+                        <b><code>stage</code></b> : true if the step is the start of a stage
+                    </li>
+                    <li>
+                        <b><code>parents</code></b> : id of the parent steps, closest parent first
+                    </li>
+                    <li>
+                        <b><code>parent</code></b> : id of immediate parent step
+                    </li>
+                    <li>
+                        <b><code>children</code></b> : id of the children steps
+                    </li>
+                    <li>
+                        <b><code>url</code></b> : url of the step in Pipeline Steps view
+                    </li>
+                    <li>
+                        <b><code>log</code></b> : url to the logs (null if no log)
+                    </li>
+                </ul>
+                example<br>
+                <code><br>
+                    &nbsp;&nbsp;stage ('stage1') {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;parallel (<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;)<br>
+                    &nbsp;&nbsp;}<br>
+                    &nbsp;&nbsp;print logparser.getPipelineStepsUrls()<br>
+                </code><br>
+                result:<br>
+                <code><br>
+                    &nbsp;&nbsp;[<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:2, name:null, stage:false, parents:[], parent:null, children:[3, 15], url:https://mydomain.com/job/myjob/28/execution/node/2/, log:null]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:3, name:null, stage:false, parents:[2], parent:2, children:[4, 14], url:https://mydomain.com/job/myjob/28/execution/node/3/, log:https://mydomain.com/job/myjob/28/execution/node/3/log]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:4, name:stage1, stage:true, parents:[3, 2], parent:3, children:[5, 13], url:https://mydomain.com/job/myjob/28/execution/node/4/, log:null]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:5, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[7, 8, 10, 12], url:https://mydomain.com/job/myjob/28/execution/node/5/, log:https://mydomain.com/job/myjob/28/execution/node/5/log]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:7, name:branch1, stage:false, parents:[5, 4, 3, 2], parent:5, children:[9], url:https://mydomain.com/job/myjob/28/execution/node/7/, log:null]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:9, name:null, stage:false, parents:[7, 5, 4, 3, 2], parent:7, children:[], url:https://mydomain.com/job/myjob/28/execution/node/9/, log:https://mydomain.com/job/myjob/28/execution/node/9/log]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:8, name:branch2, stage:false, parents:[5, 4, 3, 2], parent:5, children:[11], url:https://mydomain.com/job/myjob/28/execution/node/8/, log:null]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:11, name:null, stage:false, parents:[8, 5, 4, 3, 2], parent:8, children:[], url:https://mydomain.com/job/myjob/28/execution/node/11/, log:https://mydomain.com/job/myjob/28/execution/node/11/log]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:10, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[], url:https://mydomain.com/job/myjob/28/execution/node/10/, log:null]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:12, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[], url:https://mydomain.com/job/myjob/28/execution/node/12/, log:null]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:13, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[], url:https://mydomain.com/job/myjob/28/execution/node/13/, log:null]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:14, name:null, stage:false, parents:[3, 2], parent:3, children:[], url:https://mydomain.com/job/myjob/28/execution/node/14/, log:null]<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;[id:15, name:null, stage:false, parents:[2], parent:2, children:[], url:https://mydomain.com/job/myjob/28/execution/node/15/, log:null]<br>
+                    &nbsp;&nbsp;]
+                </code><br>
             </p>
         </dd>
     </dl>
