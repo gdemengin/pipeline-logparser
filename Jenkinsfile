@@ -2,7 +2,7 @@
 
 
 // import logparser library
-@Library('pipeline-logparser@1.0') _
+@Library('pipeline-logparser@fixparsing') _
 
 // uncomment if needed
 // logparser.setVerbose(true)
@@ -63,8 +63,61 @@ def runBranches() {
     echo 'this log is not in any branch'
 }
 
-runBranches()
+def runSingleBranches() {
+    // parallel with only one branch
+    // it's a way to generate logs (wish there was a dedicated log command to do that)
+    parallel main: {
+        parallel init: {
+            print 1
+        }
+        parallel build: {
+            print 1
+        }
+    }
+}
 
+def runBranchesWithManyLines(nblines) {
+    // run branches with manylines and making sure lines are mixed between branches
+    // without technical pipeline pieces of logs between each switch of branch in the logs
+    def script = '''\
+        set +x
+        i=0
+        while [ $i -lt ''' + nblines.toString() + '''  ]
+        do
+            echo line $i
+            i=$(( $i+1 ))
+            if [ $i = 50 ]
+            then
+                # sleep once in the middle to let the other branch do some logs
+                sleep 1
+            fi
+        done
+        '''
+    script = script.stripIndent()
+    print script
+    parallel one: {
+        node() {
+            sh script
+        }
+    }, two: {
+        node() {
+            sh script
+        }
+    }
+}
+
+def runStagesAndBranches() {
+    stage('stage1') {
+        echo 'in stage1'
+    }
+    stage('stage2') {
+        parallel 's2b1': {
+            echo 'in stage2.s2b1'
+        }, 's2b2': {
+            echo 'in stage2.s2b2'
+        }
+    }
+}
 
 // =================================
 // = parse logs and archive them   =
@@ -78,8 +131,14 @@ def parseLogs() {
     sleep 1
     echo ''
 
+    // archivelogs (manual check required)
+
     // archive full logs
-    logparser.archiveLogsWithBranchInfo('consoleText.txt')
+    timestamps {
+        print 'before parsing and archiving'
+        logparser.archiveLogsWithBranchInfo('consoleText.txt')
+        print 'after parsing and archiving'
+    }
     // same with vt100 markups
     logparser.archiveLogsWithBranchInfo('consoleText.vt100.txt', [hideVT100:false])
     // logs without parent branch info for nested branches (this info was not visible before 2.25)
@@ -95,11 +154,64 @@ def parseLogs() {
 
 
     // access logs programmatically
+    def logsBranch1 = logparser.getLogsWithBranchInfo(filter:'branch1')
     def logsBranch2 = logparser.getLogsWithBranchInfo(filter:'branch2')
+    def logsBranch3 = logparser.getLogsWithBranchInfo(filter:'branch3')
+    def fullLog = logparser.getLogsWithBranchInfo()
     print "logsBranch2='''${logsBranch2}'''"
     assert logsBranch2.contains('in branch1') == false
-    assert logsBranch2.contains('in branch2') == true
+    assert logsBranch2.contains('in branch2')
+    assert logsBranch3.size() == 0
+
+    assert fullLog.contains('in branch1')
+    assert fullLog.contains('in branch2')
+    assert fullLog.contains('not in any branch')
+    assert fullLog.contains('[main] [init]')
+    assert fullLog.contains('[main] [build]')
 }
 
+runBranches()
+runSingleBranches()
+runBranchesWithManyLines(100)
+runStagesAndBranches()
 parseLogs()
 
+// uncomment to test with 10 million lines (multiple hours of test, may fail if not enough heap space)
+/*
+
+runBranchesWithManyLines(1000)
+timestamps {
+    print 'before parsing'
+    logparser.archiveLogsWithBranchInfo('manylines1000.txt')
+    print 'after parsing'
+}
+
+runBranchesWithManyLines(10*1000)
+timestamps {
+    print 'before parsing'
+    logparser.archiveLogsWithBranchInfo('manylines10000.txt')
+    print 'after parsing'
+}
+
+runBranchesWithManyLines(100*1000)
+timestamps {
+    print 'before parsing'
+    logparser.archiveLogsWithBranchInfo('manylines100000.txt')
+    print 'after parsing'
+}
+
+runBranchesWithManyLines(1000*1000)
+timestamps {
+    print 'before parsing'
+    logparser.archiveLogsWithBranchInfo('manylines1000000.txt')
+    print 'after parsing'
+}
+
+runBranchesWithManyLines(10*1000*1000)
+timestamps {
+    print 'before parsing'
+    logparser.archiveLogsWithBranchInfo('manylines10000000.txt')
+    print 'after parsing'
+}
+
+*/

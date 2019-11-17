@@ -34,64 +34,44 @@ List<java.util.LinkedHashMap> getLogIndex() {
     def logIndexFile = new File(jobRoot, 'log-index')
     assert logIndexFile.exists()
 
-    // format of a line can be one of the following:
-    // offset nodeId: start of new node range and end of the previous (if present : range without Id).
-    // offset: end of current node range.
+    // format of a line : <start offset> <id>
+    // if no id it's a block without id (technical pipeline log)
 
-    // so logIndexList is a list with triplets : [ start, id, stop ]*
-    // last triplet might be incomplete
-    def logIndexList = logIndexFile.text.replaceAll('[\n\r]', ' ').split(' ').collect{ it }
-
-    // parse complete triplets
-    def index = 0
-    for (def i = 0; i + 2 < logIndexList.size(); i += 3) {
-        def start = Integer.parseInt(logIndexList[i])
-        def id = Integer.parseInt(logIndexList[i+1])
-        def stop = Integer.parseInt(logIndexList[i+2])
-
-        if (index != start) {
-            // no workflow id (probably pipeline technical log)
-            logIndex += [ [ id: null, start: index, stop: start ] ]
+    def previousStart = 0
+    def previousId = null
+    for (line in logIndexFile.text.split('\n')) {
+        def logIndexItems = line.split(' ')
+        assert logIndexItems.size() == 1 || logIndexItems.size() == 2, 'failed to parse log-index file'
+        def start = Integer.parseInt(logIndexItems[0])
+        def id = null
+        if (logIndexItems.size() == 2) {
+            id = Integer.parseInt(logIndexItems[1])
         }
+        assert start > previousStart, 'failed to parse log-index file'
 
-        logIndex += [ [ id: id, start: start, stop: stop ] ]
-
-        index = stop
+        logIndex += [ [ id: previousId, start: previousStart, stop: start ] ]
+        previousStart = start
+        previousId = id
     }
 
     if (verbose) {
+        //print "logIndexFile=${logIndexFile.text}"
         print "logIndex=${logIndex}"
     }
 
     return logIndex
 }
 
-// recursive
-// internal
-// used internally to build list of children ids and list of nested branch ids for a particular workflow node
-@NonCPS
-def familyTree(nodeId, childrenMap, branchList) {
-    def family = [:]
-    // immediate family
-    family.children = childrenMap."$nodeId".minus(branchList)
-    family.nested = childrenMap."$nodeId".intersect(branchList)
-
-    // 2nd generation and below
-    def generation2 = family.children.collect{ familyTree(it, childrenMap, branchList) }
-
-    generation2.each{
-        family.children += it.children
-        family.nested += it.nested
-    }
-    return family
-}
-
 // return map describing the content of each branch:
-// workflow ids of children, nested branches and parent branch
-// { id: { children: [id ...], nested: [id, ...], parent: id } }
+// - branch name (if any otherwise null)
+// - workflow ids of children
+// - nested branches ids
+// - parent branch id
+// - branch name of all parents (parent, grandParent, etc ...)
+// { id: { name: brancheName, children: [id ...], nested: [id, ...], parent: id, parentNames: [ parentName, grandParentName, ...] } }
 // cf https://stackoverflow.com/a/57351397
 @NonCPS
-java.util.LinkedHashMap getWorkflowParallelBranchMap() {
+java.util.LinkedHashMap getWorkflowBranchMap() {
 
     // return value
     def branchMap = [:]
@@ -108,70 +88,103 @@ java.util.LinkedHashMap getWorkflowParallelBranchMap() {
     fileList.each { assert it.name ==~ /^[0-9]*\.xml$/ }
     fileList = fileList.sort { a,b -> Integer.parseInt(a.name.replace('.xml','')) <=> Integer.parseInt(b.name.replace('.xml','')) }
 
-    // temporary map of children, parents
-    def childrenMap = [:].withDefault { [] }
-    def parentMap = [:]
+    // temporary map of parent branches
+    def parentBranchMap = [:]
 
     for (file in fileList) {
         def rootnode = new XmlSlurper().parse(file.path)
         def parents = rootnode.node.parentIds.string.collect{ Integer.parseInt("$it") }
         def id = Integer.parseInt("${rootnode.node.id}")
-        def branch = rootnode.actions."org.jenkinsci.plugins.workflow.cps.steps.ParallelStepExecution_-ParallelLabelAction".branchName.toString()
+        def nodeClass = rootnode.node.@'class'
 
-        if (branch != '') {
-            branchMap."$id" = [:]
-            branchMap."$id".name = branch
-        }
+        //if (verbose) {
+        //    print "file ${file.path}: class=${nodeClass} id=${id} parents=${parents}"
+        //}
 
-        if (parents.size() == 1) {
-            parents.each {
-                childrenMap."$it" += [id]
-                parentMap."$id" = it
-            }
-        } else if (parents.size() > 1) {
-            // multiple parents, this is a join of multiple branches
-            // so the real parent is the parent branch of those multiple branches
-            // find common parent in ParentMap
-            // (needed for nested branches to know which branch this id really is)
-            def fullParentLists = parents.collect {
-                def fullParentList = []
-                def next = it
-                while(next) {
-                    fullParentList += [ next ]
-                    next = parentMap."$next"
+        // start of branch: record branch name
+        if (nodeClass == 'cps.n.StepStartNode') {
+            def descriptorId = rootnode.node.descriptorId
+            def name = null
+            if (descriptorId == 'org.jenkinsci.plugins.workflow.cps.steps.ParallelStep') {
+                name = rootnode.actions.'org.jenkinsci.plugins.workflow.cps.steps.ParallelStepExecution_-ParallelLabelAction'.branchName.toString()
+                // if node is missing default value is ''
+                if (name == '') {
+                    name = null
                 }
-                return fullParentList
             }
 
-            def commonParents = fullParentLists[0].intersect(fullParentLists[1])
-            for (def i = 2; i < fullParentLists.size() ; i++) {
-                commonParents = commonParents.intersect(fullParentLists[i])
+            branchMap."$id" = [:]
+            branchMap."$id".children = []
+            branchMap."$id".nested = []
+            branchMap."$id".name = name
+
+            //if (verbose) {
+            //    print "file ${file.path}: branchMap.$id=${branchMap."$id"}"
+            //}
+        }
+
+        if (nodeClass == 'org.jenkinsci.plugins.workflow.graph.FlowStartNode') {
+            assert parents.size() == 0
+            // no parent, start family tree
+            branchMap."$id" = [:]
+            branchMap."$id".children = []
+            branchMap."$id".nested = []
+            branchMap."$id".name = null
+            branchMap."$id".parent = null
+        }
+        else {
+            assert parents.size() > 0
+            def branchParentId
+
+            if (nodeClass == 'cps.n.StepEndNode') {
+                // end of branch
+                branchParentId = Integer.parseInt("${rootnode.node.startId}")
+            }
+            else {
+                // not a end of branch so one parent only
+                assert parents.size() == 1
+                branchParentId = parents[0]
             }
 
-            // the first in the list is the parent
-            // if none was found something is wrong
-            assert commonParents.size() > 0
-            childrenMap."${commonParents[0]}" += [id]
-            parentMap."$id" = commonParents[0]
+            // if the parent is not a branch but the child of a branch
+            // use that branch id instead: it is the true branch parent
+            if (
+                ! ( branchParentId in branchMap.keySet().collect{ Integer.parseInt("$it") } ) &&
+                ( branchParentId in parentBranchMap.keySet().collect{ Integer.parseInt("$it") } )
+            ) {
+                branchParentId = parentBranchMap."$branchParentId"
+            }
+
+            parentBranchMap."$id" = branchParentId
+            if ( branchParentId in branchMap.keySet().collect{ Integer.parseInt("$it") } ) {
+                if ( id in branchMap.keySet().collect{ Integer.parseInt("$it") } ) {
+                    branchMap."$branchParentId".nested += [ id ]
+                    branchMap."$id".parent = branchParentId
+                } else {
+                    branchMap."$branchParentId".children += [ id ]
+                }
+            }
+
+            //if (verbose) {
+            //    print "file ${file.path}: branchParentId=${branchParentId}"
+            //}
+        }
+    }
+
+    // fill in list of parent branches (next parent first)
+    branchMap.each { k, v ->
+        v.parentNames = []
+        def next = v.parent
+        while (next) {
+            if (branchMap."${next}".name) {
+                v.parentNames += [ branchMap."${next}".name ]
+            }
+            next = branchMap."${next}".parent
         }
     }
 
     if (verbose) {
-        print "childrenMap=${childrenMap}"
-        print "parentMap =${parentMap}"
-    }
-
-    // now fill branch map with children and parents
-    branchMap.keySet().each {
-        def family = familyTree(it, childrenMap, branchMap.keySet().collect{ Integer.parseInt(it) } )
-        branchMap."$it".children = family.children
-        branchMap."$it".nested = family.nested
-        family.nested.each { n ->
-            branchMap."$n".parent = it
-        }
-    }
-
-    if (verbose) {
+        print "parentBranchMap=${parentBranchMap}"
         print "branchMap=${branchMap}"
     }
 
@@ -190,20 +203,24 @@ List<java.util.LinkedHashMap> getLogIndexWithBranches() {
     def logIndex = getLogIndex()
 
     // 2/ get branch information
-    def branchMap = getWorkflowParallelBranchMap()
+    def branchMap = getWorkflowBranchMap()
 
     // and use branchMap to fill reverse map for all ids : for each id find which branch(es) it belong to
     def idBranchMap = [:]
     branchMap.each { k, v ->
         v.children.each {
-            // each id should appear in one branch only
+            // each id should appear as child of one branch only
             assert idBranchMap."$it" == null
-            idBranchMap."$it" = [v.name]
-            def next = v.parent
-            while (next) {
-                idBranchMap."$it" += [ branchMap."${next}".name ]
-                next = branchMap."${next}".parent
+            if (v.name) {
+                idBranchMap."$it" = [v.name] + v.parentNames
+            } else {
+                idBranchMap."$it" = v.parentNames
             }
+        }
+        if (v.name) {
+            idBranchMap."$k" = [v.name] + v.parentNames
+        } else {
+            idBranchMap."$k" = v.parentNames
         }
     }
 
@@ -214,14 +231,15 @@ List<java.util.LinkedHashMap> getLogIndexWithBranches() {
     // finally fill the logIndex with list of branches
     def logIndexWithBranches = logIndex.collect {
         if (it.id) {
+            assert idBranchMap."${it.id}" != null
             return [ id: it.id, start: it.start, stop: it.stop, branches: idBranchMap."${it.id}" ]
         } else {
-            return [ id: null, start: it.start, stop: it.stop, branches: null ]
+            return [ id: null, start: it.start, stop: it.stop, branches: [] ]
         }
     }
 
     if (verbose) {
-        print "logIndexWithBranches=${logIndex}"
+        print "logIndexWithBranches=${logIndexWithBranches}"
     }
 
     return logIndexWithBranches
@@ -235,7 +253,6 @@ List<java.util.LinkedHashMap> getLogIndexWithBranches() {
 // cf http://ascii-table.com/ansi-escape-sequences-vt-100.php
 // cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html
 // cf https://issues.jenkins-ci.org/browse/JENKINS-48344
-// TODO parse markup to extract useful information (timestamp)
 @NonCPS
 String removeVT100Markups(String buffer) {
     return buffer.replaceAll(/\x1B\[8m.*?\x1B\[0m/, '')
@@ -289,8 +306,10 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])
         def logIndex = getLogIndexWithBranches()
 
         // Read the log file as byte[].
-        def logFile = currentBuild.rawBuild.getLogFile()
-        def logs = logFile.bytes
+        def jobRoot = currentBuild.rawBuild.getRootDir()
+        def logFile = new File("${jobRoot}/log")
+        assert logFile.exists()
+        def logStream = currentBuild.rawBuild.getLogInputStream()
 
         def filtered = 0
         def filteredBranches = [:]
@@ -308,7 +327,7 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])
         }
 
         logIndex.each {
-            if (it.branches != null) {
+            if (it.branches.size() > 0) {
                 def branchInfo = ''
                 if (showParents) {
                     // reverse list to show parent branch first
@@ -326,17 +345,26 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])
                         filtered = 0
                         filteredBranches = [:]
                     }
-                    output += new String(logs, it.start, it.stop - it.start, "UTF-8").split('\n').collect{ "${branchInfo}${it}" }.join('\n') + '\n'
+                    byte[] logs = new byte[it.stop - it.start]
+                    assert logStream.read(logs) == it.stop - it.start
+                    output += new String(logs, 0, it.stop - it.start, "UTF-8").split('\n').collect{ "${branchInfo}${it}" }.join('\n') + '\n'
 
                 // (filterBranchName in it.branches) would not return true (.equals mismatch ...) use toString
                 } else if (filterBranchName.toString() in it.branches.collect{ it.toString() }) {
                     // nested branches is filtered: record it
+                    assert logStream.skip(it.stop - it.start)
                     filtered += it.stop - it.start
                     filteredBranches."${it.branches.reverse().join('.')}" = true
+                } else {
+                    assert logStream.skip(it.stop - it.start)
                 }
             } else if (filterBranchName == null) {
                 // not in a parallel branch
-                output += new String(logs, it.start, it.stop - it.start, "UTF-8")
+                byte[] logs = new byte[it.stop - it.start]
+                assert logStream.read(logs) == it.stop - it.start
+                output += new String(logs, 0, it.stop - it.start, "UTF-8")
+            } else {
+                assert logStream.skip(it.stop - it.start)
             }
         }
 
@@ -381,7 +409,7 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])
 
 // archive buffer directly on the master (no need to instantiate a node like ArchiveArtifact)
 @NonCPS
-def archiveArtifactBuffer(String buffer, String name) {
+void archiveArtifactBuffer(String name, String buffer) {
     def jobRoot = currentBuild.rawBuild.getRootDir()
     def file = new File("${jobRoot}/archive/${name}")
 
@@ -401,9 +429,9 @@ def archiveArtifactBuffer(String buffer, String name) {
 // cf https://stackoverflow.com/a/57351397
 // (workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304)
 @NonCPS
-def archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])
+void archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])
 {
-    archiveArtifactBuffer(getLogsWithBranchInfo(options), name)
+    archiveArtifactBuffer(name, getLogsWithBranchInfo(options))
 }
 
 
