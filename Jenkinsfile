@@ -2,7 +2,7 @@
 
 
 // import logparser library
-@Library('pipeline-logparser@fixparsing') _
+@Library('pipeline-logparser@master') _
 
 // uncomment if needed
 // logparser.setVerbose(true)
