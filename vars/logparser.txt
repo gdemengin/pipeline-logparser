@@ -7,6 +7,89 @@
     </p>
     <dl>
         <dt>
+            <b><code>java.util.ArrayList getBlueOceanUrls(RunWrapper build = currentBuild)</code></b>
+        </dt>
+        <dd>
+            <p>
+                get tree of Blue Ocean steps, with links to logs, and information about parallel branches and stages<br>
+                layed out as a list with each element a map of step information to traverse the tree:
+                <ul>
+                    <li>
+                        <b><code>id</code></b> : the id of the step
+                    </li>
+                    <li>
+                        <b><code>name</code></b> : the name of the step if it is the start of a branch or a stage (null otherwise)
+                    </li>
+                    <li>
+                        <b><code>stage</code></b> : true if the step is the start of a stage
+                    </li>
+                    <li>
+                        <b><code>parents</code></b> : id of the parent steps, closest parent first
+                    </li>
+                    <li>
+                        <b><code>parent</code></b> : id of immediate parent step
+                    </li>
+                    <li>
+                        <b><code>url</code></b> : url of the step in Blue Ocean view
+                    </li>
+                    <li>
+                        <b><code>log</code></b> : url to the Blue Ocean logs (log might be incorrect in case of nested stage)
+                    </li>
+                </ul>
+                examples<br>
+                <ul>
+                    <li>
+                        <b>from current run</b><br>
+                        <code><br>
+                            &nbsp;&nbsp;stage ('stage1') {<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;parallel (<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;)<br>
+                            &nbsp;&nbsp;}<br>
+                            &nbsp;&nbsp;def blueTree = logparser.getBlueOceanUrls()<br>
+                        </code><br>
+                        result:<br>
+                        <code><br>
+                            &nbsp;&nbsp;blueTree = [<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:2, name:null, stage:false, parents:[], parent:null,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/log/?start=0<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:4, name:stage1, stage:true, parents:[2], parent:2,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/4,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/4/log/?start=0<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:7, name:branch1, stage:false, parents:[4, 2], parent:4,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/7,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/7/log/?start=0<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;],<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;[<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id:8, name:branch2, stage:false, parents:[4, 2], parent:4,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/8,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/8/log/?start=0<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;]<br>
+                            &nbsp;&nbsp;]<br>
+                        </code><br>
+                    </li>
+                    <li>
+                        <b>from another job/run</b><br>
+                        <code><br>
+                            &nbsp;&nbsp;// get RunWrapper for current job last stable run<br>
+                            &nbsp;&nbsp;// using https://github.com/gdemengin/pipeline-whitelist<br>
+                            &nbsp;&nbsp;@Library('pipeline-whitelist@2.0.1') _<br>
+                            &nbsp;&nbsp;def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))<br>
+                            &nbsp;&nbsp;<br>
+                            &nbsp;&nbsp;def blueTree = logparser.getBlueOceanUrls(otherBuild)<br>
+                        </code><br>
+                    </li>
+                </ul>
+            </p>
+        </dd>
+        <dt>
             <b><code>String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], RunWrapper build = currentBuild)</code></b><br>
             <br>
             <b><code>void archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])</code></b>

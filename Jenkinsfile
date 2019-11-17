@@ -2,7 +2,15 @@
 
 
 // import logparser library
-@Library('pipeline-logparser@1.4') _
+@Library('pipeline-logparser@blue') _
+
+
+properties([
+    parameters([
+        booleanParam(defaultValue: false, description: '''set to to true to run extra long tests (multiple hours + may fail if not enough heap)''', name: 'FULL_LOGPARSER_TEST'),
+        booleanParam(defaultValue: false, description: 'FULL_LOGPARSER_TEST + even more aggressive: with log editing', name: 'FULL_LOGPARSER_TEST_WITH_LOG_EDIT')
+    ])
+])
 
 // ===============
 // = constants   =
@@ -12,9 +20,9 @@ LABEL_LINUX='linux'
 
 // set to to true to run extra long tests
 // (multiple hours + may fail if not enough heap)
-RUN_FULL_LOGPARSER_TEST = false
+RUN_FULL_LOGPARSER_TEST = params.FULL_LOGPARSER_TEST
 // even more aggressive: with log editing
-RUN_FULL_LOGPARSER_TEST_WITH_LOG_EDIT = false
+RUN_FULL_LOGPARSER_TEST_WITH_LOG_EDIT = params.FULL_LOGPARSER_TEST_WITH_LOG_EDIT
 
 // =============
 // = globals   =
@@ -576,15 +584,20 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
 }
 
 def printUrls(check) {
+    def bou
     def psu
     timestamps {
+        print 'before getBlueOceanUrls()'
+        bou = logparser.getBlueOceanUrls()
+        print 'after getBlueOceanUrls()'
+
         print 'before getPipelineStepsUrls()'
         psu = logparser.getPipelineStepsUrls()
         print 'after getPipelineStepsUrls()'
     }
 
     if (check) {
-        [ psu ].each {
+        [ bou, psu ].each {
             assert it.findAll{ it.parent == null }.size() == 1
 
             // check expected steps
@@ -646,6 +659,20 @@ def printUrls(check) {
     }
 
     def str = ''
+    str += '\n********************\n'
+    str += '* Blue Ocean links *\n'
+    str += '********************\n'
+    bou.each {
+        def offset = ''
+        for(def i = 0; i < it.parents.size(); i++) { offset += '    ' }
+        str += "${offset}"
+        if (it.stage) { str += "stage " }
+        if (it.name) { str += "${it.name}" } else { str += "Start of Pipeline" }
+        str += " id=${it.id} parent=${it.parent} parents=${it.parents}\n"
+        str += "${offset}- url = ${it.url}\n"
+        str += "${offset}- log = ${it.log}\n"
+    }
+
     str += '\n*************************\n'
     str += '* Pipelines Steps links *\n'
     str += '*************************\n'
@@ -689,7 +716,7 @@ def testLogparser() {
     parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end)
     printUrls(true)
 
-    if (RUN_FULL_LOGPARSER_TEST) {
+    if (RUN_FULL_LOGPARSER_TEST || RUN_FULL_LOGPARSER_TEST_WITH_LOG_EDIT) {
         // test with 10 million lines (multiple hours of test, may fail if not enough heap space)
         [ 1, 10, 100, 1000, 10000 ].each {
             stage("test ${it}*1000 lines") {
