@@ -6,7 +6,7 @@
         <a href="https://github.com/gdemengin/pipeline-logparser">pipeline-logparser</a> a library to parse and filter logs
     </p>
     <dl>
-        <dt><b><code>archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])</code></b></dt>
+        <dt><b><code>void archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])</code></b></dt>
         <dd>
             <p>
                 archive logs (with branch information) in run artifacts
