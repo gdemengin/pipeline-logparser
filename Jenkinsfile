@@ -1,4 +1,4 @@
-// sample pipeline to test https://github.com/gdemengin/pipeline-logs/ "Global Pipeline Library" logparser
+// sample pipeline to test https://github.com/gdemengin/pipeline-logparser/ "Global Pipeline Library" logparser
 
 
 // import logparser library
