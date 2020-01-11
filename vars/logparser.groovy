@@ -34,7 +34,7 @@ List<java.util.LinkedHashMap> getLogIndex() {
     def logIndexFile = new File(jobRoot, 'log-index')
     assert logIndexFile.exists()
 
-    // format of a line : <start offset> <id>
+    // format of a line : <start offset> [<id>]
     // if no id it's a block without id (technical pipeline log)
 
     def previousStart = 0
@@ -249,13 +249,38 @@ List<java.util.LinkedHashMap> getLogIndexWithBranches() {
 //* LOG FILTERING & EDITING *
 //***************************
 
-// remove log VT100 markups ( ESC[8m.*ESC[0m ) which make logfile hard to read
-// cf http://ascii-table.com/ansi-escape-sequences-vt-100.php
-// cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html
-// cf https://issues.jenkins-ci.org/browse/JENKINS-48344
+// utility function to find which version of the logs is currently available
 @NonCPS
-String removeVT100Markups(String buffer) {
-    return buffer.replaceAll(/\x1B\[8m.*?\x1B\[0m/, '')
+Boolean logHasNewFormat()
+{
+    def WJpluginVerList = Jenkins.instance.pluginManager.plugins.findAll{ it.getShortName() == 'workflow-job' }.collect { it.getVersion() }
+    assert WJpluginVerList.size() == 1, 'could not fing workflow-job plugin version'
+
+    def WJpluginVer = WJpluginVerList[0].split(/\./)
+
+    if (WJpluginVer.size() > 1 && WJpluginVer[0] ==~ /\d+/) {
+        def major = WJpluginVer[0].toInteger()
+
+        def minor = null
+        if (WJpluginVer.size() > 2 && WJpluginVer[1] ==~ /\d+/) {
+            minor = WJpluginVer[1].toInteger()
+        } else if (WJpluginVer.size() == 1) {
+            minor = 0
+        }
+        if (minor != null) {
+            return (major >= 2 && minor > 25)
+        }
+    }
+
+    if (verbose) {
+        print "failed to parse ${WJpluginVerList[0]}"
+    }
+
+    // failed to find version ...
+    // try to guess some other way: log-index did not exist before
+    def jobRoot = currentBuild.rawBuild.getRootDir()
+    def logIndexFile = new File(jobRoot, 'log-index')
+    return logIndexFile.exists()
 }
 
 // return log file with BranchInformation
@@ -267,7 +292,8 @@ String removeVT100Markups(String buffer) {
 // - with a marker showing nested branches if options.markNestedFiltered is true (default) and if filterBranchName is not null
 //   example:
 //      "[ filtered 6787 bytes of logs for nested branches: branch2.branch21 branch2.branch22 ] (...)"
-// - with vt100 markups removed if options.hideVT100 is true (default)
+// - without vt100 markups if options.hideVT100 is true (default)
+// - without Pipeline technical logs if options.hidePipeline is true (default)
 //
 // cf https://stackoverflow.com/questions/38304403/jenkins-pipeline-how-to-get-logs-from-parallel-builds
 // cf https://stackoverflow.com/a/57351397
@@ -279,29 +305,32 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])
     def output = ''
 
     // 1/ parse options
-    options.keySet().each{ assert it in ['filter', 'showParents', 'markNestedFiltered', 'hideVT100'], "invalid option $it" }
+    def defaultOptions = [ filter: [], showParents: true, markNestedFiltered: true, hidePipeline: true, hideVT100: true ]
+    // merge 2 maps with priority to options values
+    options = defaultOptions.plus(options)
+    options.keySet().each{ assert it in ['filter', 'showParents', 'markNestedFiltered', 'hidePipeline', 'hideVT100'], "invalid option $it" }
+    // make sure there is no type mismatch when comparing elements of options.filter
+    options.filter = options.filter.collect{ it != null ? it.toString() : null }
 
-    // name of the branch to filter. default value null
-    def filterBranchName = options.filter
+    def removeTechnicalLogs = { buffer ->
+        if (options.hideVT100 || options.hidePipeline) {
+            // remove Pipeline logs or VT100 markups ( ESC[8m.*ESC[0m which make logfile hard to read )
+            // cf http://ascii-table.com/ansi-escape-sequences-vt-100.php
+            // cf https://www.codesd.com/item/how-to-delete-jenkins-console-log-annotations.html
+            // cf https://issues.jenkins-ci.org/browse/JENKINS-48344
+            def VT100Pattern = '\\x1B\\[8m.*?\\x1B\\[0m'
+            def PipelinePattern = "(?m)^${VT100Pattern}\\[Pipeline\\] .*\$\\n|(?m)^\\[Pipeline\\] .*\$\\n"
 
-    // show parent branch(es) name(s) if nested branch
-    def showParents = options.showParents == null ? true : options.showParents
+            def pattern = (options.hideVT100 && options.hidePipeline) ?
+                PipelinePattern + '|' + VT100Pattern :
+                (options.hideVT100 ? VT100Pattern : PipelinePattern)
+            return buffer.replaceAll(/${pattern}/, '')
+        } else {
+            return buffer
+        }
+    }
 
-    // highlight nested branches filtered when filterBranchName is not null
-    // technically they are a sub-part of the branch we are filtering
-    // but showing them might show logs from mutiple branches: better to filter them 1 by 1 (caller decision)
-    // put a marker in log to indicate that logs for those branches were filtered
-    // "[ filtered 6787 bytes of logs for nested branches: branch2.branch21 branch2.branch22 ] (...)"
-    def markNestedFiltered = options.markNestedFiltered == null ? true : options.markNestedFiltered
-
-    // hide VT100 markups
-    def hideVT100 = options.hideVT100 == null ? true : options.hideVT100
-
-    def WJpluginVerList = Jenkins.instance.pluginManager.plugins.findAll{ it.getShortName() == 'workflow-job' }.collect { it.getVersion() }
-    assert WJpluginVerList.size() == 1, 'could not fing workflow-job plugin version'
-    def WJpluginVer = Float.parseFloat(WJpluginVerList[0])
-
-    if (WJpluginVer > 2.25) {
+    if (logHasNewFormat()) {
         // get the log index before to read the logfile to make sure all items are in the file
         def logIndex = getLogIndexWithBranches()
 
@@ -311,25 +340,39 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])
         assert logFile.exists()
         def logStream = currentBuild.rawBuild.getLogInputStream()
 
-        def filtered = 0
+        def sizeFiltered = 0
         def filteredBranches = [:]
-        def filterMsg = { b, m ->
+
+        def filterMsg = { bytesFiltered, filteredBranchesMap ->
             def msg = ''
-            if (markNestedFiltered) {
+            if (options.markNestedFiltered) {
+                // highlight nested branches filtered when filterBranchName is not null
+                // technically they are a sub-part of the branch we are filtering
+                // but showing them might show logs from mutiple branches: better to filter them 1 by 1 (caller decision)
+                // put a marker in log to indicate that logs for those branches were filtered
+                // "[ filtered 6787 bytes of logs for nested branches: branch2.branch21 branch2.branch22 ] (...)"
                 // TODO: number of filtered lines rather than number of bytes
-                msg = "[ filtered ${b} bytes of logs"
-                if (m.size() != 0) {
-                    msg += " for nested branches: ${m.keySet().join(' ')}"
+                msg = "[ filtered ${bytesFiltered} bytes of logs"
+                if (filteredBranchesMap.size() != 0) {
+                    msg += " for nested branches: ${ filteredBranchesMap.keySet().sort().join(' ') }"
                 }
                 msg +=  " ] (...)\n"
             }
             return msg
         }
 
+        def keepBranch = { branchName ->
+            // check if branch was in the list of branches to keep
+            return options.filter.count{ it != null && branchName ==~ /^${it}$/ } > 0
+        }
+
         logIndex.each {
+            def logSize = it.stop - it.start
             if (it.branches.size() > 0) {
+                // in a branch
+
                 def branchInfo = ''
-                if (showParents) {
+                if (options.showParents) {
                     // reverse list to show parent branch first
                     branchInfo = it.branches.reverse().collect{ "[$it] " }.sum()
                 } else {
@@ -337,66 +380,100 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:])
                 }
 
                 if (
-                    (filterBranchName == null) ||
-                    (it.branches[0] == filterBranchName)
+                    options.filter.size() == 0 ||
+                    keepBranch(it.branches[0])
                 ) {
-                    if (filtered > 0) {
-                        output += filterMsg.call(filtered, filteredBranches)
-                        filtered = 0
+                    // configured to show this branch
+
+                    // if some branches were filtered add nested marker first
+                    if (sizeFiltered > 0) {
+                        output += filterMsg(sizeFiltered, filteredBranches)
+                        sizeFiltered = 0
                         filteredBranches = [:]
                     }
-                    byte[] logs = new byte[it.stop - it.start]
-                    assert logStream.read(logs) == it.stop - it.start
-                    output += new String(logs, 0, it.stop - it.start, "UTF-8").split('\n').collect{ "${branchInfo}${it}" }.join('\n') + '\n'
 
-                // (filterBranchName in it.branches) would not return true (.equals mismatch ...) use toString
-                } else if (filterBranchName.toString() in it.branches.collect{ it.toString() }) {
-                    // nested branches is filtered: record it
-                    assert logStream.skip(it.stop - it.start)
-                    filtered += it.stop - it.start
+                    byte[] logs = new byte[logSize]
+                    assert logStream.read(logs) == logSize
+
+                    // offset relative to the end of the log
+                    // to skip trailing \n when adding prefix
+                    def offset = 0
+                    if (new String(logs, logSize - 1, 1, "UTF-8") == '\n') {
+                        offset = -1
+                    }
+                    // split with -1 to avoid removing empty lines at the end (if string endsWith(\n\n))
+                    def str = new String(logs, 0, logSize + offset, "UTF-8").split('\n', -1).collect{ "${branchInfo}${it}" }.join('\n')
+                    if (offset == -1) {
+                        // put back trailing \n
+                        str += '\n'
+                    }
+
+                    str = removeTechnicalLogs(str)
+                    output += str
+                } else if (
+                     it.branches.count{ keepBranch(it) } > 0 ||
+                     null in options.filter
+                ) {
+                    // branch is not kept (not in filter) but one of its parent branch is kept: record it as filtered
+
+                    assert logStream.skip(logSize)
+                    sizeFiltered += logSize
                     filteredBranches."${it.branches.reverse().join('.')}" = true
                 } else {
-                    assert logStream.skip(it.stop - it.start)
+                    // none of the parent branches is kept, skip this one entirely
+
+                    assert logStream.skip(logSize)
                 }
-            } else if (filterBranchName == null) {
-                // not in a parallel branch
-                byte[] logs = new byte[it.stop - it.start]
-                assert logStream.read(logs) == it.stop - it.start
-                output += new String(logs, 0, it.stop - it.start, "UTF-8")
+            } else if (
+                (options.filter.size() == 0) ||
+                (null in options.filter)
+            ) {
+                // not in a branch and configured to show main branch
+
+                byte[] logs = new byte[logSize]
+                assert logStream.read(logs) == logSize
+                def str = new String(logs, 0, logSize, "UTF-8")
+
+                str = removeTechnicalLogs(str)
+
+                if (str.size() > 0) {
+                    // if branches were filtered add nested marker first
+                    if (sizeFiltered > 0) {
+                        output += filterMsg(sizeFiltered, filteredBranches)
+                        sizeFiltered = 0
+                        filteredBranches = [:]
+                    }
+                    output += str
+                }
             } else {
-                assert logStream.skip(it.stop - it.start)
+                // not in a branch and configured to show a branch (and NOT main branch 'null')
+
+                assert logStream.skip(logSize)
             }
         }
 
-        if (filtered > 0) {
-            output += filterMsg.call(filtered, filteredBranches)
+        if (sizeFiltered > 0) {
+            output += filterMsg(sizeFiltered, filteredBranches)
         }
 
-        if (hideVT100) {
-            output = removeVT100Markups(output)
-        }
     } else {
         // pre log-index version
         // parse logs the old way with a regexp since branches are already set
-        // options showParents not implemented
-        assert options.showParents == null || options.showParents == false, 'options showParents not implemented before workflow-job plugin 2.25 or earlier'
-        // options markNestedFiltered implemented differently: nested branches are marked through the "[Pipeline] [BranchName]" prefixes which show start of a new branch
+        // options showParents & markNestedFiltered not implemented (ignored)
 
-        output = currentBuild.rawBuild.log
-        if (hideVT100) {
-            output = removeVT100Markups(output)
-        }
-        if (filterBranchName != null) {
+        output = removeTechnicalLogs(currentBuild.rawBuild.log)
+
+        if (options.filter.size() != 0) {
             // get all lines starting with [BranchName]
-            def expr = /(?m)^\[${filterBranchName}\] .*$/
-
-            // markNestedFiltered implies showing lines starting with [Pipeline] [BranchName]
-            // it actually shows more than just nested branches
-            if (markNestedFiltered) {
-                expr = /(?m)^\[Pipeline\] \[${filterBranchName}\] .*$|(?m)^\[${filterBranchName}\] .*$/
+            def expr = []
+            options.filter.each {
+                if (it == null) {
+                    expr += [ '(?m)^$|(?m)^[^\\[\\n].*$' ]
+                } else {
+                    expr += [ "(?m)^\\[${it}\\] .*\$" ]
+                }
             }
-
-            output = (output =~ expr).collect{ it }.findAll{ it }.join('\n')
+            output = (output =~ /${expr.join('|')}/ ).collect{ "${it}\n" }.join('')
         }
     }
 
@@ -436,4 +513,3 @@ void archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:
 
 
 return this
-
