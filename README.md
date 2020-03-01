@@ -84,7 +84,7 @@ _identifier "pipeline-logparser" is the name of the library set by jenkins admin
   def mylog = logparser.getLogsWithBranchInfo()
   ```
 
-- see complete documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/master/vars/logparser.txt)  
+- see complete documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/1.1/vars/logparser.txt)  
 also available in $JOB_URL/pipeline-syntax/globals#logparser (visible only after the library has been imported once)
 
 
