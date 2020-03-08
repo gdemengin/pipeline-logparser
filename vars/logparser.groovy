@@ -268,7 +268,7 @@ Boolean logHasNewFormat()
             minor = 0
         }
         if (minor != null) {
-            return (major >= 2 && minor > 25)
+            return ((major > 2) || (major == 2 && minor > 25))
         }
     }
 

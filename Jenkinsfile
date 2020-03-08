@@ -8,10 +8,6 @@
 // = constants   =
 // ===============
 
-// label which exist on the instance, has linux hosts
-// null if all hosts comply
-LABEL_LINUX=null
-
 // set to to true to run extra long tests
 // (multiple hours + may fail if not enough heap)
 RUN_FULL_LOGPARSER_TEST = false
@@ -146,49 +142,32 @@ def runSingleBranches(expectedLogMap) {
 def runBranchesWithManyLines(nblines, expectedLogMap) {
     // run branches with manylines and making sure lines are mixed between branches
     // without technical pipeline pieces of logs between each switch of branch in the logs
-    def script = '''\
-        set +x
-        i=0
-        while [ $i -lt ''' + nblines.toString() + ''' ]
-        do
-            echo line $i
-            i=$(( $i+1 ))
-            if [ $i = 50 ]
-            then
-                # sleep once in the middle to let the other branch do some logs
-                sleep 1
-            fi
-        done
-        '''
-
-    script = script.stripIndent()
-
-    def output='+ set +x\n'
-
-    // times not allowed with older versions
-    // nblines.times{
-    for (def it = 0; it < nblines; it++) {
-        output += "line ${it}\n"
-    }
-
-    print script
-    expectedLogMap.'null' += script + '\n'
+    def makelogs = { b, t1, t2 ->
+        def out = ''
+        for (def i = 0; i < nblines; i++) {
+            out += "line $i\n"
+        }
+        print "starting ${b}"
+        expectedLogMap."${b}" += "starting ${b}\n"
+        sleep t1
+        expectedLogMap."${b}" += "Sleeping for ${t1} sec\n"
+        print out
+        expectedLogMap."${b}" += out + '\n'
+        sleep t2
+        expectedLogMap."${b}" += "Sleeping for ${t2} sec\n"
+        print "ending ${b}"
+        expectedLogMap."${b}" += "ending ${b}\n"
+   }
+   print "testing branches with ${nblines}"
+   expectedLogMap.'null' += "testing branches with ${nblines}\n"
 
     expectedLogMap.'one' = ''
     expectedLogMap.'two' = ''
 
     parallel one: {
-        node(LABEL_LINUX) {
-            expectedLogMap.'one' += "Running on ${env.NODE_NAME} in ${env.WORKSPACE}\n"
-            expectedLogMap.'one' += output
-            sh script
-        }
+        makelogs('one', 1, 2)
     }, two: {
-        node(LABEL_LINUX) {
-            expectedLogMap.'two' += "Running on ${env.NODE_NAME} in ${env.WORKSPACE}\n"
-            expectedLogMap.'two' += output
-            sh script
-        }
+        makelogs('two', 2, 1)
     }
     expectedLogMap.'null' += '[ filtered XX bytes of logs for nested branches: one two ] (...)\n'
 }
@@ -233,18 +212,13 @@ def checkBranchLogs(logs, name, expected) {
         print "expected.'${name}'='''\\\n${expected}'''"
         assert editedLogs == expected
     } else {
-        // shell plugin generates extra logs (is this version specific ??)
-        def editedLogs = logs.replaceAll(/(?m)^\[.*\] Running shell script$\n/, '')
-        if (logs != editedLogs) {
-            print "editedLogs.'${name}'='''\\\n${editedLogs}'''"
-        }
         print "expected.'${name}'='''\\\n${expected}'''"
         // old version does not generate filtering markups
         def editedExpected = expected.replaceAll(/(?m)^\[ filtered XX bytes of logs.*$\n/, '')
         if (expected != editedExpected) {
             print "editedExpected.'${name}'='''\\\n${editedExpected}'''"
         }
-        assert editedExpected == editedLogs
+        assert editedExpected == logs
     }
 }
 
@@ -280,10 +254,6 @@ def expectedBranchLogs(expectedLogMap, key, branchInfo) {
 def unsortedCompare(log1, log2) {
     def sortedLog1 = log1.split('\n', -1).sort().join('\n')
     def sortedLog2 = log2.split('\n', -1).sort().join('\n')
-    if (!newLogFormat) {
-        sortedLog1 = sortedLog1.replaceAll(/(?m)^\[.*\] Running shell script$\n/, '')
-        sortedLog2 = sortedLog2.replaceAll(/(?m)^\[.*\] Running shell script$\n/, '')
-    }
     print "sortedLog1='''\\\n${sortedLog1}'''"
     print "sortedLog2='''\\\n${sortedLog2}'''"
 
