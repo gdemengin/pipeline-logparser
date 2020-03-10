@@ -312,6 +312,7 @@ def parseLogs(expectedLogMap, begin, end) {
     // other options
     def fullLogVT100 = logparser.getLogsWithBranchInfo([hideVT100:false])
     def fullLogPipeline = logparser.getLogsWithBranchInfo([hidePipeline:false])
+    def fullLogPipelineVT100 = logparser.getLogsWithBranchInfo([hidePipeline:false, hideVT100:false])
     def fullLogNoNest = logparser.getLogsWithBranchInfo([markNestedFiltered:false])
     def logsBranch2NoNest = logparser.getLogsWithBranchInfo(filter:['branch2'], markNestedFiltered:false)
     def logsBranch21NoParent = logparser.getLogsWithBranchInfo(filter:['branch21'], showParents:false)
@@ -408,13 +409,18 @@ def parseLogs(expectedLogMap, begin, end) {
     assert extractMainLogs(logsFullStar, begin, end) == extractMainLogs(fullLog, begin, end)
 
     // check other options
-    assert fullLogVT100 ==~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/
+    // this one might fail when job started by timer
+    // TODO: test it with repeatable call
+    // assert fullLogVT100 ==~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/
     assert fullLog      !=~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/
     assert fullLogVT100.replaceAll(/\x1B\[8m.*?\x1B\[0m/, '') == fullLog
 
     assert fullLogPipeline ==~ /(?s).*\[Pipeline\] .*/
     assert fullLog         !=~ /(?s).*\[Pipeline\] .*/
     assert fullLogPipeline.replaceAll(/(?m)^\[Pipeline\] .*$\n/, '') == fullLog
+
+    assert fullLogPipelineVT100 ==~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/
+    assert fullLogPipelineVT100.replaceAll(/\x1B\[8m.*?\x1B\[0m/, '').replaceAll(/(?m)^\[Pipeline\] .*$\n/, '') == fullLog
 
     assert fullLogNoNest == fullLog
 
