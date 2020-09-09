@@ -258,22 +258,25 @@ Boolean logHasNewFormat()
 
     def WJpluginVer = WJpluginVerList[0].split(/\./)
 
-    if (WJpluginVer.size() > 1 && WJpluginVer[0] ==~ /\d+/) {
+    if (WJpluginVer.size() > 0 && WJpluginVer[0] ==~ /\d+/) {
         def major = WJpluginVer[0].toInteger()
+        if (major > 2) {
+            return true
+        }
 
         def minor = null
-        if (WJpluginVer.size() > 2 && WJpluginVer[1] ==~ /\d+/) {
+        if (WJpluginVer.size() > 1 && WJpluginVer[1] ==~ /\d+/) {
             minor = WJpluginVer[1].toInteger()
         } else if (WJpluginVer.size() == 1) {
             minor = 0
         }
         if (minor != null) {
-            return ((major > 2) || (major == 2 && minor > 25))
+            return (major == 2 && minor > 25)
         }
     }
 
     if (verbose) {
-        print "failed to parse ${WJpluginVerList[0]}"
+        print "failed to parse workflow-job plugin version ${WJpluginVerList[0]}"
     }
 
     // failed to find version ...
