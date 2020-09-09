@@ -2,7 +2,7 @@
 
 
 // import logparser library
-@Library('pipeline-logparser@stage') _
+@Library('pipeline-logparser@1.2') _
 
 // ===============
 // = constants   =
