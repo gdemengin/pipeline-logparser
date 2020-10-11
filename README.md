@@ -1,92 +1,279 @@
 # pipeline-logparser
 a library to parse and filter logs
-  * implementation of https://stackoverflow.com/a/57351397
-  * workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304
+  * implementation of https://stackoverflow.com/a/57351397 to parse logs
+  * workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304 to show name of current parallel branch in front of each line in the logs
+  * it provides logs 
+    * as String for those who need to programatically parse them
+    * or as run artifacts for those who need to archive them
+  * it parses logs
+    * from currentBuild
+    * from another run or job
+  * **(new in 1.3)** it provides accessors to 'pipeline step' logs
+  * compatible with version 2.73.3 and more (last tested with 2.73.3, 2.190.1 & 2.249.2)
 
 ## Table of contents
-- [Library Content](#content)
 - [Documentation](#documentation)
 - [Installation](#installation)
 - [Know Limitations](#limitations)
 - [Change log](#changelog)
-
-
-## Library Content <a name="content"></a>
-this library offer functions to retrieve logs as string or files (as run artifacts), and to parse the logs at the same time  
-  
-it allows:
-- to add branch prefix [branchName] in front of each line of the logs belonging to a parallel branch
-  ```
-  echo 'not in any branch'
-  parallel (
-    branch1: { echo 'in branch1' },
-    branch2: { echo 'in branch2' }
-  )
-  ```
-  > not in any branch  
-  > **[branch1]** in branch1  
-  > **[branch2]** in branch2
-
-- to filter logs by branchName
-
-  > **[branch1]** in branch1
-
-- to show the name of parent branches (parent branch first) for nested branches
-  ```
-  parallel branch2: {
-    echo 'in branch2'
-    parallel branch21: { echo 'in branch2.branch21' }
-  }
-  ```
-  > **[branch2]** in branch2  
-  > **[branch2] [branch21]** in branch2.branch21
-
-- to archive logs in job artifacts (without having to allocate a node : same as ArchiveArtifacts but without `node()` scope)
-
-- to hide or show VT100 markups from logs (which make raw log hard to read)
-
-- to hide or show Pipeline technical log lines (lines starting with [Pipeline] ) from logs
-  > [Pipeline] Start of Pipeline  
-  > [Pipeline] echo  
-  > not in any branch  
-  > [Pipeline] parallel  
-  > [Pipeline] { (Branch: branch1)  
-  > [Pipeline] { (Branch: branch2)  
-  > [Pipeline] echo  
-  > **[branch1]** in branch1  
-  > [Pipeline] }  
-  > [Pipeline] echo  
-  > **[branch2]** in branch2  
-  > [Pipeline] }  
-  > [Pipeline] // parallel  
-  > [Pipeline] End of Pipeline  
-  > Finished: SUCCESS  
-
-- to access descriptors of log and branches internal ids
-
 
 ## Documentation <a name="documentation"></a>
 
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@1.2') _
+@Library('pipeline-logparser@refactor') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
-* _it may be different on your instance_
-* _see below [Installation](#installation)_
+  * _it may be different on your instance_
+  * _see below [Installation](#installation)_
 
 ### use library's functions:
 
-- the name of the package is logparser:
+after import the name of the package is logparser:
+```
+// get logs with branch prefix
+def mylog = logparser.getLogsWithBranchInfo()
+```
+
+### Detailed Documentation
+
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/refactor/vars/logparser.txt)  
+also available in $JOB_URL/pipeline-syntax/globals#logparser
+  * visible only after the library has been imported once
+  * requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity
+
+this library offer functions to
+* to retrieve logs with branch info as string or as run artifacts
+* to filter logs from branches
+* to retrieve urls to logs (pipeline steps)
+  
+functionalities:
+- retrieve logs with branch info
+
+  * add branch prefix [branchName] in front of each line for that branch
+    ```
+    echo 'not in any branch'
+    parallel (
+      branch1: { echo 'in branch1' },
+      branch2: { echo 'in branch2' }
+    )
+    print logparser.getLogsWithBranchInfo()
+    ```
+    result:
+    ```
+    not in any branch
+    [branch1] in branch1
+    [branch2] in branch2
+    ```
+
+  * **(new in 1.2)** show stage name with option `showStages=true`
+    ```
+    stage ('stage1') {
+      echo 'in stage 1'
+    }
+    print logparser.getLogsWithBranchInfo(showStages: true)
+    ```
+    result:
+    ```
+    [stage1] in stage 1
+    ```
+
+  * show parent branch name (parent branch first) for nested branches
+    ```
+    parallel branch2: {
+      echo 'in branch2'
+      parallel branch21: { echo 'in branch2.branch21' }
+    }
+    print logparser.getLogsWithBranchInfo()
+    ```
+    result:
+    ```
+    [branch2] in branch2
+    [branch2] [branch21] in branch2.branch21
+    ```
+
+  * hide parent branch name with option `showParents=false`
+    ```
+    parallel branch2: {
+      echo 'in branch2'
+      parallel branch21: { echo 'in branch2.branch21' }
+    }
+    print logparser.getLogsWithBranchInfo(showParents: false)
+    ```
+    result:
+    ```
+    [branch2] in branch2
+    [branch21] in branch2.branch21
+    ```
+
+  * show VT100 markups (hidden by default as they make raw log hard to read) with option `hideVT100=false`
+    ```
+    node {
+      def logs = logparser.getLogsWithBranchInfo(hideVT100: false)
+      assert logs ==~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/
+    }
+    ```
+
+  * show Pipeline technical log lines (starting with [Pipeline]) with option `hidePipeline=false`
+    ```
+    echo 'not in any branch'
+    parallel (
+      branch1: { echo 'in branch1' },
+      branch2: { echo 'in branch2' }
+    )
+    print logparser.getLogsWithBranchInfo(hidePipeline: false)
+    ```
+    result:
+    ```
+    [Pipeline] Start of Pipeline
+    [Pipeline] echo
+    not in any branch
+    [Pipeline] parallel
+    [Pipeline] [branch1] { (Branch: branch1)
+    [Pipeline] [branch1] echo
+    [branch1] in branch1
+    [Pipeline] [branch2] { (Branch: branch2)
+    [Pipeline] [branch2] echo
+    [branch2] in branch2
+    [Pipeline] }
+    [Pipeline] }
+    [Pipeline] // parallel
+    ```
+
+- archive logs in job artifacts (without having to allocate a node : same as ArchiveArtifacts but without `node()` scope)
   ```
-  // get logs with branch prefix
-  def mylog = logparser.getLogsWithBranchInfo()
+  echo 'not in any branch'
+  parallel (
+    branch1: { echo 'in branch1' },
+    branch2: { echo 'in branch2' }
+  )
+  logparser.archiveLogsWithBranchInfo('logs.txt')
+  ```
+  result: logs.txt in $BUILD_URL/artifact with content:
+  ```
+  not in any branch
+  [branch1] in branch1
+  [branch2] in branch2
   ```
 
-- see complete documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/1.2/vars/logparser.txt)  
-also available in $JOB_URL/pipeline-syntax/globals#logparser (visible only after the library has been imported once)
+- filter branch logs with option `filter=[ list of branches to keep ]`
 
+  * filter by name
+    ```
+    echo 'not in any branch'
+    parallel (
+      branch1: { echo 'in branch1' },
+      branch2: { echo 'in branch2' }
+    )
+    print logparser.getLogsWithBranchInfo(filter: [ 'branch1' ])
+    ```
+    result:
+    ```
+    [branch1] in branch1
+    ```
+
+  * filter multiple branches
+    ```
+    echo 'not in any branch'
+    parallel (
+      branch1: { echo 'in branch1' },
+      branch2: { echo 'in branch2' },
+      branch3: { echo 'in branch3' }
+    )
+    print logparser.getLogsWithBranchInfo(filter: [ 'branch1', 'branch3' ])
+    ```
+    result:
+    ```
+    [branch1] in branch1
+    [branch3] in branch3
+    ```
+
+  * filter with regular expression
+    ```
+    echo 'not in any branch'
+    parallel (
+      branch1: { echo 'in branch1' },
+      branch2: { echo 'in branch2' }
+    )
+    print logparser.getLogsWithBranchInfo(filter: [ '.*2' ])
+    ```
+    result:
+    ```
+    [branch2] in branch2
+    ```
+
+  * show name of nested branches filtered out
+    ```
+    parallel branch2: {
+      echo 'in branch2'
+      parallel branch21: { echo 'in branch2.branch21' }
+    }
+    print logparser.getLogsWithBranchInfo(filter: [ 'branch2' ])
+    ```
+    result:
+    ```
+    [branch2] in branch2
+    <nested branch [branch2.branch21]>
+    ```
+
+  * hide name of nested branches filtered out with option `markNestedFiltered=false`
+    ```
+    parallel branch2: {
+      echo 'in branch2'
+      parallel branch21: { echo 'in branch2.branch21' }
+    }
+    print logparser.getLogsWithBranchInfo(filter: [ 'branch2' ], markNestedFiltered: false)
+    ```
+    result:
+    ```
+    [branch2] in branch2
+    ```
+
+  * filter logs not in any branch
+    ```
+    echo 'not in any branch'
+    parallel (
+      branch1: { echo 'in branch1' },
+      branch2: { echo 'in branch2' }
+    )
+    print logparser.getLogsWithBranchInfo(filter: [ null ])
+    ```
+    result:
+    ```
+    not in any branch
+    <nested branch [branch1]>
+    <nested branch [branch2]>
+    ```
+
+- **(new in 1.3)** get pipeline steps tree, with links to logs, and information about parallel branches and stages
+  ```
+  stage ('stage1') {
+    parallel (
+      branch1: { echo 'in branch1' },
+      branch2: { echo 'in branch2' }
+    )
+  }
+  print logparser.getPipelineStepsUrls()
+  ```
+  result:
+  ```
+  [
+    [id:2, name:null, stage:false, parents:[], parent:null, children:[3, 15], url:https://mydomain.com/job/myjob/28/execution/node/2/, log:null]
+    [id:3, name:null, stage:false, parents:[2], parent:2, children:[4, 14], url:https://mydomain.com/job/myjob/28/execution/node/3/, log:https://mydomain.com/job/myjob/28/execution/node/3/log]
+    [id:4, name:stage1, stage:true, parents:[3, 2], parent:3, children:[5, 13], url:https://mydomain.com/job/myjob/28/execution/node/4/, log:null]
+    [id:5, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[7, 8, 10, 12], url:https://mydomain.com/job/myjob/28/execution/node/5/, log:https://mydomain.com/job/myjob/28/execution/node/5/log]
+    [id:7, name:branch1, stage:false, parents:[5, 4, 3, 2], parent:5, children:[9], url:https://mydomain.com/job/myjob/28/execution/node/7/, log:null]
+    [id:9, name:null, stage:false, parents:[7, 5, 4, 3, 2], parent:7, children:[], url:https://mydomain.com/job/myjob/28/execution/node/9/, log:https://mydomain.com/job/myjob/28/execution/node/9/log]
+    [id:8, name:branch2, stage:false, parents:[5, 4, 3, 2], parent:5, children:[11], url:https://mydomain.com/job/myjob/28/execution/node/8/, log:null]
+    [id:11, name:null, stage:false, parents:[8, 5, 4, 3, 2], parent:8, children:[], url:https://mydomain.com/job/myjob/28/execution/node/11/, log:https://mydomain.com/job/myjob/28/execution/node/11/log]
+    [id:10, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[], url:https://mydomain.com/job/myjob/28/execution/node/10/, log:null]
+    [id:12, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[], url:https://mydomain.com/job/myjob/28/execution/node/12/, log:null]
+    [id:13, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[], url:https://mydomain.com/job/myjob/28/execution/node/13/, log:null]
+    [id:14, name:null, stage:false, parents:[3, 2], parent:3, children:[], url:https://mydomain.com/job/myjob/28/execution/node/14/, log:null]
+    [id:15, name:null, stage:false, parents:[2], parent:2, children:[], url:https://mydomain.com/job/myjob/28/execution/node/15/, log:null]
+  ]
+  ```
 
 ## Installation <a name="installation"></a>
 
@@ -102,70 +289,7 @@ Note:
 
 ## Known limitations <a name="limitations"></a>
 
-* parsing may fail (and cause job to fail) when log is too big (millions of lines, hundreds of MB of logs) because of a lack of heap space
-
-* when logparser functions are called the last lines of logs might not be flushed yet and shall not be in the resulting log
-  workaround: before to call logparser add these 2 statements
-  ```
-  // sleep 1s and use echo to flush logs before to call logparser
-  sleep 1
-  echo ''
-  ```
-  example:  
-  ```
-  @Library('pipeline-logparser@1.2') _
-
-  parallel(
-    branch1: { echo 'in branch1' },
-    branch2: { echo 'in branch2' }
-  )
-
-  // sleep 1s and use echo to flush logs before to call logparser
-  sleep 1
-  echo ''
-
-  logparser.archiveLogsWithBranchInfo('console.txt')
-  ```
-  NB: this might not always be enough
-
-* when hidePipeline is false, the output is not fully equivalent to what we had with job-workflow plugin v2.25 and earlier :
-  example:  
-  * pipeline code
-
-    ```
-    parallel(
-      branch1: { echo 'in branch1' },
-      branch2: { echo 'in branch2' }
-    )
-    ```
-  * job-workflow plugin v2.25 output:
-
-    > [Pipeline] parallel  
-    > [Pipeline] **[branch1]** { (Branch: branch1)  
-    > [Pipeline] **[branch2]** { (Branch: branch2)  
-    > [Pipeline] **[branch1]** echo  
-    > [branch1] in branch1  
-    > [Pipeline] **[branch1]** }  
-    > [Pipeline] **[branch2]** echo  
-    > [branch2] in branch2  
-    > [Pipeline] **[branch2]** }  
-    > [Pipeline] // parallel  
-    > [Pipeline] End of Pipeline
-
-  * output using `logparser.getLogsWithBranchInfo()`:
-
-    > [Pipeline] Start of Pipeline  
-    > [Pipeline] parallel  
-    > [Pipeline] { (Branch: branch1)  
-    > [Pipeline] { (Branch: branch2)  
-    > [Pipeline] echo  
-    > [branch1] in branch1  
-    > [Pipeline] }  
-    > [Pipeline] echo  
-    > [branch2] in branch2  
-      
-    So we lose a bit of information: the lines starting with `[Pipeline]` and which belonged to a specific branch like `[Pipeline] [branch2] echo`  
-    It might not be the most important information but sometimes it is useful to know which branch it belongs to
+* calls to `logparser.getLogsWithBranchInfo()` may fail (and cause job to fail) when log is too big (millions of lines, hundreds of MB of logs) because of a lack of heap space
 
 ## Change log <a name="changelog"></a>
 
@@ -186,3 +310,9 @@ Note:
 
 * 1.2 (09/2020)
   - handle logs from stages and add option showStages (default false) to show/filter them
+
+* 1.3 (10/2020)
+  - refactor to use objects available in rawbuild API (no more parsing of xml on disk)
+    fix known limitations (no more need to wait a few seconds before to parse logs)
+  - new API to retrieve URLs to logs of branches (pipeline Steps URLs)
+  - ability to parse logs from another run/job
