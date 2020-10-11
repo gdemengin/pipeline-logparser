@@ -22,7 +22,7 @@ a library to parse and filter logs
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@refactor') _
+@Library('pipeline-logparser@1.3') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
   * _it may be different on your instance_
@@ -38,7 +38,7 @@ def mylog = logparser.getLogsWithBranchInfo()
 
 ### Detailed Documentation
 
-see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/refactor/vars/logparser.txt)  
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/1.3/vars/logparser.txt)  
 also available in $JOB_URL/pipeline-syntax/globals#logparser
   * visible only after the library has been imported once
   * requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity
