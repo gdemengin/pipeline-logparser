@@ -1,15 +1,17 @@
 # pipeline-logparser
-a library to parse and filter logs
-  * implementation of https://stackoverflow.com/a/57351397 to parse logs
-  * workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304 to show name of current parallel branch in front of each line in the logs
-  * it provides logs 
-    * as String for those who need to programatically parse them
-    * or as run artifacts for those who need to archive them
-  * it parses logs
-    * from currentBuild
-    * from another run or job
-  * **(new in 1.3)** it provides accessors to 'pipeline step' logs
-  * compatible with version 2.73.3 and more (last tested with 2.73.3, 2.190.1 & 2.249.2)
+  
+A library to parse and filter logs
+* workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304 to help accessing/identifying logs from parallel branches
+* implementation of https://stackoverflow.com/a/57351397
+  
+Content:
+  * it provides API to parse logs (from currentBuild or from another run or job) and append them with name of current branch/stage
+    * as String for those who need to programatically parse logs
+    * or as run artifacts for those who need to archive logs with branch names for later use
+  * it provides accessors to 'pipeline step' logs
+  
+Compatibility:
+  * tested with 2.73.3, 2.190.1 & 2.249.2
 
 ## Table of contents
 - [Documentation](#documentation)
@@ -22,11 +24,11 @@ a library to parse and filter logs
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@1.3') _
+@Library('pipeline-logparser@nested') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
-  * _it may be different on your instance_
-  * _see below [Installation](#installation)_
+* _it may be different on your instance_
+* _see below [Installation](#installation)_
 
 ### use library's functions:
 
@@ -38,15 +40,15 @@ def mylog = logparser.getLogsWithBranchInfo()
 
 ### Detailed Documentation
 
-see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/1.3/vars/logparser.txt)  
-also available in $JOB_URL/pipeline-syntax/globals#logparser
-  * visible only after the library has been imported once
-  * requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/nested/vars/logparser.txt)  
+* _also available in $JOB_URL/pipeline-syntax/globals#logparser_
+  * _visible only after the library has been imported once_
+  * _requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity_
 
-this library offer functions to
-* to retrieve logs with branch info as string or as run artifacts
+this library provides functions:
+* to retrieve logs with branch info (as string or as run artifacts)
 * to filter logs from branches
-* to retrieve urls to logs (pipeline steps)
+* to retrieve direct urls to logs (pipeline steps)
   
 functionalities:
 - retrieve logs with branch info
@@ -67,7 +69,7 @@ functionalities:
     [branch2] in branch2
     ```
 
-  * **(new in 1.2)** show stage name with option `showStages=true`
+  * show stage name with option `showStages=true`
     ```
     stage ('stage1') {
       echo 'in stage 1'
@@ -109,6 +111,7 @@ functionalities:
 
   * show VT100 markups (hidden by default as they make raw log hard to read) with option `hideVT100=false`
     ```
+    // use node to make sure VT100 markups are in the logs
     node {
       def logs = logparser.getLogsWithBranchInfo(hideVT100: false)
       assert logs ==~ /(?s).*\x1B\[8m.*?\x1B\[0m.*/
@@ -214,7 +217,7 @@ functionalities:
     result:
     ```
     [branch2] in branch2
-    <nested branch [branch2.branch21]>
+    <nested branch [branch2] [branch21]>
     ```
 
   * hide name of nested branches filtered out with option `markNestedFiltered=false`
@@ -246,34 +249,107 @@ functionalities:
     <nested branch [branch2]>
     ```
 
-- **(new in 1.3)** get pipeline steps tree, with links to logs, and information about parallel branches and stages
-  ```
-  stage ('stage1') {
-    parallel (
-      branch1: { echo 'in branch1' },
-      branch2: { echo 'in branch2' }
-    )
-  }
-  print logparser.getPipelineStepsUrls()
-  ```
-  result:
-  ```
-  [
-    [id:2, name:null, stage:false, parents:[], parent:null, children:[3, 15], url:https://mydomain.com/job/myjob/28/execution/node/2/, log:null]
-    [id:3, name:null, stage:false, parents:[2], parent:2, children:[4, 14], url:https://mydomain.com/job/myjob/28/execution/node/3/, log:https://mydomain.com/job/myjob/28/execution/node/3/log]
-    [id:4, name:stage1, stage:true, parents:[3, 2], parent:3, children:[5, 13], url:https://mydomain.com/job/myjob/28/execution/node/4/, log:null]
-    [id:5, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[7, 8, 10, 12], url:https://mydomain.com/job/myjob/28/execution/node/5/, log:https://mydomain.com/job/myjob/28/execution/node/5/log]
-    [id:7, name:branch1, stage:false, parents:[5, 4, 3, 2], parent:5, children:[9], url:https://mydomain.com/job/myjob/28/execution/node/7/, log:null]
-    [id:9, name:null, stage:false, parents:[7, 5, 4, 3, 2], parent:7, children:[], url:https://mydomain.com/job/myjob/28/execution/node/9/, log:https://mydomain.com/job/myjob/28/execution/node/9/log]
-    [id:8, name:branch2, stage:false, parents:[5, 4, 3, 2], parent:5, children:[11], url:https://mydomain.com/job/myjob/28/execution/node/8/, log:null]
-    [id:11, name:null, stage:false, parents:[8, 5, 4, 3, 2], parent:8, children:[], url:https://mydomain.com/job/myjob/28/execution/node/11/, log:https://mydomain.com/job/myjob/28/execution/node/11/log]
-    [id:10, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[], url:https://mydomain.com/job/myjob/28/execution/node/10/, log:null]
-    [id:12, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[], url:https://mydomain.com/job/myjob/28/execution/node/12/, log:null]
-    [id:13, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[], url:https://mydomain.com/job/myjob/28/execution/node/13/, log:null]
-    [id:14, name:null, stage:false, parents:[3, 2], parent:3, children:[], url:https://mydomain.com/job/myjob/28/execution/node/14/, log:null]
-    [id:15, name:null, stage:false, parents:[2], parent:2, children:[], url:https://mydomain.com/job/myjob/28/execution/node/15/, log:null]
-  ]
-  ```
+- get logs from another job/run
+    ```
+    // get RunWrapper for current job last stable run
+    // using https://github.com/gdemengin/pipeline-whitelist
+    @Library('pipeline-whitelist@2.0.1') _
+    def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
+
+    def otherBuildLogs = logparser.getLogsWithBranchInfo([:], otherBuild)
+    ```
+
+- get pipeline steps tree, with links to logs, and information about parallel branches and stages
+  * from current run
+    ```
+    stage ('stage1') {
+      parallel (
+        branch1: { echo 'in branch1' },
+        branch2: { echo 'in branch2' }
+      )
+    }
+    def stepsTree = logparser.getPipelineStepsUrls()
+    ```
+    result:
+    ```
+    stepsTree = [
+      [
+        id:2, name:null, stage:false, parents:[], parent:null, children:[3, 15],
+        url:https://mydomain.com/job/myjob/28/execution/node/2/,
+        log:null
+      ],
+      [
+        id:3, name:null, stage:false, parents:[2], parent:2, children:[4, 14],
+        url:https://mydomain.com/job/myjob/28/execution/node/3/,
+        log:https://mydomain.com/job/myjob/28/execution/node/3/log
+      ],
+      [
+        id:4, name:stage1, stage:true, parents:[3, 2], parent:3, children:[5, 13],
+        url:https://mydomain.com/job/myjob/28/execution/node/4/,
+        log:null
+      ],
+      [
+        id:5, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[7, 8, 10, 12],
+        url:https://mydomain.com/job/myjob/28/execution/node/5/,
+        log:https://mydomain.com/job/myjob/28/execution/node/5/log
+      ],
+      [
+        id:7, name:branch1, stage:false, parents:[5, 4, 3, 2], parent:5, children:[9],
+        url:https://mydomain.com/job/myjob/28/execution/node/7/,
+        log:null
+      ],
+      [
+        id:9, name:null, stage:false, parents:[7, 5, 4, 3, 2], parent:7, children:[],
+        url:https://mydomain.com/job/myjob/28/execution/node/9/,
+        log:https://mydomain.com/job/myjob/28/execution/node/9/log
+      ],
+      [
+        id:8, name:branch2, stage:false, parents:[5, 4, 3, 2], parent:5, children:[11],
+        url:https://mydomain.com/job/myjob/28/execution/node/8/,
+        log:null
+      ],
+      [
+        id:11, name:null, stage:false, parents:[8, 5, 4, 3, 2], parent:8, children:[],
+        url:https://mydomain.com/job/myjob/28/execution/node/11/,
+        log:https://mydomain.com/job/myjob/28/execution/node/11/log
+      ],
+      [
+        id:10, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[],
+        url:https://mydomain.com/job/myjob/28/execution/node/10/,
+        log:null
+      ],
+      [
+        id:12, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[],
+        url:https://mydomain.com/job/myjob/28/execution/node/12/,
+        log:null
+      ],
+      [
+        id:13, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[],
+        url:https://mydomain.com/job/myjob/28/execution/node/13/,
+        log:null
+      ],
+      [
+        id:14, name:null, stage:false, parents:[3, 2], parent:3, children:[],
+        url:https://mydomain.com/job/myjob/28/execution/node/14/,
+        log:null
+      ],
+      [
+        id:15, name:null, stage:false, parents:[2], parent:2, children:[],
+        url:https://mydomain.com/job/myjob/28/execution/node/15/,
+        log:null
+      ]
+    ]
+    ```
+
+  * get Pipeline Steps links from another job/run
+    ```
+    // get RunWrapper for current job last stable run
+    // using https://github.com/gdemengin/pipeline-whitelist
+    @Library('pipeline-whitelist@2.0.1') _
+    def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
+
+    def stepsTree = logparser.getPipelineStepsUrls(otherBuild)
+    ```
 
 ## Installation <a name="installation"></a>
 
@@ -312,7 +388,10 @@ Note:
   - handle logs from stages and add option showStages (default false) to show/filter them
 
 * 1.3 (10/2020)
-  - refactor to use objects available in rawbuild API (no more parsing of xml on disk)
-    fix known limitations (no more need to wait a few seconds before to parse logs)
-  - new API to retrieve URLs to logs of branches (pipeline Steps URLs)
+  - refactor to use objects available in rawbuild API (no more parsing of xml on disk)  
+    fixing known parsing limitations (no more need to wait a few seconds before to parse logs)
+  - new API to retrieve URLs to logs of branches (Pipeline Steps URLs)
   - ability to parse logs from another run/job
+
+* 1.4 (11/2020)
+  - reformat nested branch markups when filtering is used

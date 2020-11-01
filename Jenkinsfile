@@ -2,7 +2,7 @@
 
 
 // import logparser library
-@Library('pipeline-logparser@1.3') _
+@Library('pipeline-logparser@nested') _
 
 // ===============
 // = constants   =
@@ -84,9 +84,9 @@ def runBranches(expectedLogMap) {
             testBranch('branch2.branch1', loop, expectedLogMap)
         }
         parallel nestedBranches
-        expectedLogMap.'branch2' += '<nested branch [branch2.branch21]>\n'
-        expectedLogMap.'branch2' += '<nested branch [branch2.branch22]>\n'
-        expectedLogMap.'branch2' += '<nested branch [branch2.branch1]>\n'
+        expectedLogMap.'branch2' += '<nested branch [branch2] [branch21]>\n'
+        expectedLogMap.'branch2' += '<nested branch [branch2] [branch22]>\n'
+        expectedLogMap.'branch2' += '<nested branch [branch2] [branch1]>\n'
     }
 
     // branch with no logs
@@ -101,9 +101,9 @@ def runBranches(expectedLogMap) {
     expectedLogMap.'null' += '<nested branch [branch0]>\n'
     expectedLogMap.'null' += '<nested branch [branch1]>\n'
     expectedLogMap.'null' += '<nested branch [branch2]>\n'
-    expectedLogMap.'null' += '<nested branch [branch2.branch21]>\n'
-    expectedLogMap.'null' += '<nested branch [branch2.branch22]>\n'
-    expectedLogMap.'null' += '<nested branch [branch2.branch1]>\n'
+    expectedLogMap.'null' += '<nested branch [branch2] [branch21]>\n'
+    expectedLogMap.'null' += '<nested branch [branch2] [branch22]>\n'
+    expectedLogMap.'null' += '<nested branch [branch2] [branch1]>\n'
     expectedLogMap.'null' += '<nested branch [branch3]>\n'
 
     line='this log is not in any branch'
@@ -150,15 +150,15 @@ def runSingleBranches(expectedLogMap) {
             print line
             expectedLogMap."main.test" += line + '\n'
         }
-        expectedLogMap.'main' += '<nested branch [main.build]>\n'
-        expectedLogMap.'main' += '<nested branch [main.test]>\n'
+        expectedLogMap.'main' += '<nested branch [main] [build]>\n'
+        expectedLogMap.'main' += '<nested branch [main] [test]>\n'
     }
     expectedLogMap.'null' += '<nested branch [init]>\n'
     expectedLogMap.'null' += '<nested branch [empty]>\n'
     expectedLogMap.'null' += '<nested branch [endl]>\n'
     expectedLogMap.'null' += '<nested branch [main]>\n'
-    expectedLogMap.'null' += '<nested branch [main.build]>\n'
-    expectedLogMap.'null' += '<nested branch [main.test]>\n'
+    expectedLogMap.'null' += '<nested branch [main] [build]>\n'
+    expectedLogMap.'null' += '<nested branch [main] [test]>\n'
 }
 
 def runBranchesWithManyLines(nblines, expectedLogMap) {
@@ -267,15 +267,15 @@ def runStagesAndBranches(expectedLogMap, expectedLogMapWithStages) {
 
         expectedLogMap.'null' += '<nested branch [s2b1]>\n'
         expectedLogMap.'null' += '<nested branch [s2b2]>\n'
-        expectedLogMapWithStages.'stage2' += '<nested branch [stage2.stage3]>\n'
-        expectedLogMapWithStages.'stage2' += '<nested branch [stage2.s2b1]>\n'
-        expectedLogMapWithStages.'stage2' += '<nested branch [stage2.s2b2]>\n'
+        expectedLogMapWithStages.'stage2' += '<nested branch [stage2] [stage3]>\n'
+        expectedLogMapWithStages.'stage2' += '<nested branch [stage2] [s2b1]>\n'
+        expectedLogMapWithStages.'stage2' += '<nested branch [stage2] [s2b2]>\n'
     }
     expectedLogMapWithStages.'null' += '<nested branch [stage1]>\n'
     expectedLogMapWithStages.'null' += '<nested branch [stage2]>\n'
-    expectedLogMapWithStages.'null' += '<nested branch [stage2.stage3]>\n'
-    expectedLogMapWithStages.'null' += '<nested branch [stage2.s2b1]>\n'
-    expectedLogMapWithStages.'null' += '<nested branch [stage2.s2b2]>\n'
+    expectedLogMapWithStages.'null' += '<nested branch [stage2] [stage3]>\n'
+    expectedLogMapWithStages.'null' += '<nested branch [stage2] [s2b1]>\n'
+    expectedLogMapWithStages.'null' += '<nested branch [stage2] [s2b2]>\n'
 }
 
 // =======================================
@@ -389,6 +389,10 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
         logparser.archiveLogsWithBranchInfo('branch2NoNested.txt', [filter: ['branch2'], markNestedFiltered: false ])
         print 'after parsing and archiving branch2NoNested.txt'
 
+        print 'before parsing and archiving branch2NoParent.txt'
+        logparser.archiveLogsWithBranchInfo('branch2NoParent.txt', [filter: ['branch2'], showParents: false ])
+        print 'after parsing and archiving branch2NoParent.txt'
+
         print 'before parsing and archiving branch21.txt'
         logparser.archiveLogsWithBranchInfo('branch21.txt', [filter: ['branch21']])
         print 'after parsing and archiving branch21.txt'
@@ -443,6 +447,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     def fullLogNoNest = logparser.getLogsWithBranchInfo([markNestedFiltered:false])
     def logsBranch2NoNest = logparser.getLogsWithBranchInfo(filter:['branch2'], markNestedFiltered:false)
     def logsBranch21NoParent = logparser.getLogsWithBranchInfo(filter:['branch21'], showParents:false)
+    def logsBranch2NoParent = logparser.getLogsWithBranchInfo(filter:['branch2'], showParents:false)
 
     // 3/ check log content
 
@@ -566,14 +571,78 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     checkLogs(logsBranch2NoNest, null, 'logsBranch2NoNest', removeFilters(logsBranch2), null, 'removeFilters(logsBranch2)')
 
     checkBranchLogs(logsBranch21NoParent, 'branch21', expectedBranchLogs(expectedLogMap, 'branch2.branch21', '[branch21] '))
+
+    checkLogs(logsBranch2NoParent, null, 'logsBranch2NoParent', expectedBranchLogs(expectedLogMap, 'branch2', '[branch2] ').replace('<nested branch [branch2] [branch', '<nested branch [branch'), null, 'expected')
 }
 
-def printUrls() {
+def printUrls(check) {
     def psu
     timestamps {
         print 'before getPipelineStepsUrls()'
         psu = logparser.getPipelineStepsUrls()
         print 'after getPipelineStepsUrls()'
+    }
+
+    if (check) {
+        [ psu ].each {
+            assert it.findAll{ it.parent == null }.size() == 1
+
+            // check expected steps
+            assert it.findAll{ it.name == 'branch0' }.size() == 1
+            assert it.findAll{ it.name == 'branch1' }.size() == 2
+            assert it.findAll{ it.name == 'branch2' }.size() == 1
+            assert it.findAll{ it.name == 'branch21' }.size() == 1
+            assert it.findAll{ it.name == 'branch22' }.size() == 1
+            assert it.findAll{ it.name == 'branch3' }.size() == 1
+            assert it.findAll{ it.name == 'init' }.size() == 1
+            assert it.findAll{ it.name == 'empty' }.size() == 1
+            assert it.findAll{ it.name == 'endl' }.size() == 1
+            assert it.findAll{ it.name == 'main' }.size() == 1
+            assert it.findAll{ it.name == 'build' }.size() == 1
+            assert it.findAll{ it.name == 'test' }.size() == 1
+            assert it.findAll{ it.name == 'one' }.size() == 1
+            assert it.findAll{ it.name == 'two' }.size() == 1
+            assert it.findAll{ it.name == 's2b1' }.size() == 1
+            assert it.findAll{ it.name == 's2b2' }.size() == 1
+
+            // check expected stages
+            assert it.findAll{ it.name == 'stage1' }.size() == 1
+            assert it.findAll{ it.name == 'stage1' }.findAll{ it.stage }.size() == 1
+            assert it.findAll{ it.stage }.findAll{ it.name == 'stage1' }.size() == 1
+
+            assert it.findAll{ it.name == 'stage2' }.size() == 1
+            assert it.findAll{ it.name == 'stage2' }.findAll{ it.stage }.size() == 1
+            assert it.findAll{ it.stage }.findAll{ it.name == 'stage2' }.size() == 1
+
+            assert it.findAll{ it.name == 'stage3' }.size() == 1
+            assert it.findAll{ it.name == 'stage3' }.findAll{ it.stage }.size() == 1
+            assert it.findAll{ it.stage }.findAll{ it.name == 'stage3' }.size() == 1
+
+            assert it.findAll{ it.stage }.size() == 3
+            assert it.findAll{ it.name != null }.size() == 3 + 17, it.findAll{ it.name != null }.collect { it.name }
+
+            // check nested steps and stages
+            [ [ 'branch21', 'branch2' ], [ 'branch22', 'branch2' ], [ 's2b1', 'stage2' ], [ 's2b2', 'stage2' ], [ 'stage1', null ] ].each{ lit ->
+                def st = lit[0]
+                def exp = lit[1]
+                def parent = null
+                def parentName = null
+                def found = false
+                assert it.findAll{ it.name == st }.size() == 1, "${st} ${exp}"
+                it.findAll{ it.name == st }.each{ parent = it.parent }
+                while(!found)  {
+                    assert it.findAll{ it.id == parent }.size() == 1
+                    it.findAll{ it.id == parent }.each{
+                        if (it.name != null || it.parent == null) {
+                            found = true
+                            assert it.name == exp
+                        } else {
+                            parent = it.parent
+                        }
+                    }
+                }
+            }
+        }
     }
 
     def str = ''
@@ -618,7 +687,7 @@ def testLogparser() {
     }
 
     parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end)
-    printUrls()
+    printUrls(true)
 
     if (RUN_FULL_LOGPARSER_TEST) {
         // test with 10 million lines (multiple hours of test, may fail if not enough heap space)
@@ -627,7 +696,7 @@ def testLogparser() {
                 runBranchesWithManyLines(it * 1000, null)
                 timestamps {
                     print 'before parsing'
-                    printUrls()
+                    printUrls(false)
                     if (RUN_FULL_LOGPARSER_TEST_WITH_LOG_EDIT) {
                         logparser.archiveLogsWithBranchInfo("manylines${it * 1000}.txt")
                     }
