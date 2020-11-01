@@ -11,7 +11,7 @@ Content:
   * it provides accessors to 'pipeline step' logs
   
 Compatibility:
-  * tested with 2.73.3, 2.190.1 & 2.249.2
+  * tested with 2.73.3, 2.190.1 & 2.249.3
 
 ## Table of contents
 - [Documentation](#documentation)
@@ -48,7 +48,7 @@ see online documentation here: [logparser.txt](https://htmlpreview.github.io/?ht
 this library provides functions:
 * to retrieve logs with branch info (as string or as run artifacts)
 * to filter logs from branches
-* to retrieve direct urls to logs (pipeline steps)
+* to retrieve direct urls to logs (Pipeline Steps)
   
 functionalities:
 - retrieve logs with branch info
