@@ -9,7 +9,7 @@ Content:
     * as String for those who need to programatically parse logs
     * or as run artifacts for those who need to archive logs with branch names for later use
   * it provides accessors to 'pipeline step' logs
-  * **(new in 2.0)** it provides accessors to 'blue Ocean' logs urls for parallel branches and stages
+  * **(new in 2.0)** it provides accessors to 'Blue Ocean' logs urls for parallel branches and stages
   
 Compatibility:
   * tested with 2.190.1 & 2.249.3
@@ -26,7 +26,7 @@ Compatibility:
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@blue') _
+@Library('pipeline-logparser@2.0') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
 * _it may be different on your instance_
@@ -42,7 +42,7 @@ def mylog = logparser.getLogsWithBranchInfo()
 
 ### Detailed Documentation
 
-see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/blue/vars/logparser.txt)  
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/2.0/vars/logparser.txt)  
 * _also available in $JOB_URL/pipeline-syntax/globals#logparser_
   * _visible only after the library has been imported once_
   * _requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity_
@@ -50,7 +50,7 @@ see online documentation here: [logparser.txt](https://htmlpreview.github.io/?ht
 this library provides functions:
 * to retrieve logs with branch info (as string or as run artifacts)
 * to filter logs from branches
-* to retrieve direct urls to logs (pipeline steps & blue ocean)
+* to retrieve direct urls to logs (Pipeline Steps & Blue Ocean)
   
 functionalities:
 - **(new in 2.0)** get Blue Ocean links to logs for parallel branches and stages
@@ -448,4 +448,4 @@ Note:
   - reformat nested branch markups when filtering is used
 
 * 2.0 (11/2020)
-  - new API to retrieve blueOcean URLs to logs of branches and stages
+  - new API to retrieve Blue Ocean URLs to logs of branches and stages
