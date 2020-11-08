@@ -9,9 +9,11 @@ Content:
     * as String for those who need to programatically parse logs
     * or as run artifacts for those who need to archive logs with branch names for later use
   * it provides accessors to 'pipeline step' logs
+  * **(new in 2.0)** it provides accessors to 'blue Ocean' logs urls for parallel branches and stages
   
 Compatibility:
-  * tested with 2.73.3, 2.190.1 & 2.249.2
+  * tested with 2.190.1 & 2.249.3
+  * for earlier versions see version 1 (1.4 last tested with 2.73.3, 2.190.1 & 2.249.3)
 
 ## Table of contents
 - [Documentation](#documentation)
@@ -24,7 +26,7 @@ Compatibility:
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@1.4') _
+@Library('pipeline-logparser@blue') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
 * _it may be different on your instance_
@@ -40,7 +42,7 @@ def mylog = logparser.getLogsWithBranchInfo()
 
 ### Detailed Documentation
 
-see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/1.4/vars/logparser.txt)  
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/blue/vars/logparser.txt)  
 * _also available in $JOB_URL/pipeline-syntax/globals#logparser_
   * _visible only after the library has been imported once_
   * _requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity_
@@ -48,9 +50,56 @@ see online documentation here: [logparser.txt](https://htmlpreview.github.io/?ht
 this library provides functions:
 * to retrieve logs with branch info (as string or as run artifacts)
 * to filter logs from branches
-* to retrieve direct urls to logs (pipeline steps)
+* to retrieve direct urls to logs (pipeline steps & blue ocean)
   
 functionalities:
+- **(new in 2.0)** get Blue Ocean links to logs for parallel branches and stages
+  * from current run
+    ```
+    stage ('stage1') {
+      parallel (
+        branch1: { echo 'in branch1' },
+        branch2: { echo 'in branch2' }
+      )
+    }
+    def blueTree = logparser.getBlueOceanUrls()
+    ```
+    result:
+    ```
+    blueTree = [
+      [
+        id:2, name:null, stage:false, parents:[], parent:null,
+        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline,
+        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/log/?start=0
+      ],
+      [
+        id:4, name:stage1, stage:true, parents:[2], parent:2,
+        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/4,
+        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/4/log/?start=0
+      ],
+      [
+        id:7, name:branch1, stage:false, parents:[4, 2], parent:4,
+        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/7,
+        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/7/log/?start=0
+      ],
+      [
+        id:8, name:branch2, stage:false, parents:[4, 2], parent:4,
+        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/8,
+        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/8/log/?start=0
+      ]
+    ]
+    ```
+
+  * get Blue Ocean links from another job/run
+    ```
+    // get RunWrapper for current job last stable run
+    // using https://github.com/gdemengin/pipeline-whitelist
+    @Library('pipeline-whitelist@2.0.1') _
+    def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
+
+    def blueTree = logparser.getBlueOceanUrls(otherBuild)
+    ```
+
 - retrieve logs with branch info
 
   * add branch prefix [branchName] in front of each line for that branch
@@ -367,6 +416,8 @@ Note:
 
 * calls to `logparser.getLogsWithBranchInfo()` may fail (and cause job to fail) when log is too big (millions of lines, hundreds of MB of logs) because of a lack of heap space
 
+* logs of nested stages (stage inside stage) are not correctly handled in Blue Ocean (Blue Ocean limitation)
+
 ## Change log <a name="changelog"></a>
 
 * 1.0 (09/2019)
@@ -395,3 +446,6 @@ Note:
 
 * 1.4 (11/2020)
   - reformat nested branch markups when filtering is used
+
+* 2.0 (11/2020)
+  - new API to retrieve blueOcean URLs to logs of branches and stages
