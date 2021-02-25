@@ -9,11 +9,11 @@ Content:
     * as String for those who need to programatically parse logs
     * or as run artifacts for those who need to archive logs with branch names for later use
   * it provides accessors to 'pipeline step' logs
-  * **(new in 2.0)** it provides accessors to 'Blue Ocean' logs urls for parallel branches and stages
+  * it provides accessors to 'Blue Ocean' logs urls for parallel branches and stages
   
 Compatibility:
-  * tested with 2.190.1 & 2.249.3
-  * for earlier versions see version 1 (1.4 last tested with 2.73.3, 2.190.1 & 2.249.3)
+  * tested with 2.190.1 & 2.263.4
+  * for earlier versions see version 1 (1.4 last tested with 2.73.3)
 
 ## Table of contents
 - [Documentation](#documentation)
@@ -53,7 +53,7 @@ this library provides functions:
 * to retrieve direct urls to logs (Pipeline Steps & Blue Ocean)
   
 functionalities:
-- **(new in 2.0)** get Blue Ocean links to logs for parallel branches and stages
+- get Blue Ocean links to logs for parallel branches and stages
   * from current run
     ```
     stage ('stage1') {
