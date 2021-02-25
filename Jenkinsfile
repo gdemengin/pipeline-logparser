@@ -8,7 +8,8 @@
 properties([
     parameters([
         booleanParam(defaultValue: false, description: 'set to to true to run extra long tests (multiple hours + may fail if not enough heap)', name: 'FULL_LOGPARSER_TEST'),
-        booleanParam(defaultValue: false, description: 'FULL_LOGPARSER_TEST + even more aggressive: with log editing', name: 'FULL_LOGPARSER_TEST_WITH_LOG_EDIT')
+        booleanParam(defaultValue: false, description: 'FULL_LOGPARSER_TEST + even more aggressive: with log editing', name: 'FULL_LOGPARSER_TEST_WITH_LOG_EDIT'),
+        booleanParam(defaultValue: false, description: 'run multithread timing test (may last a few hours + manual check of elapsed time)', name: 'MANYTHREAD_TIMING_TEST')
     ])
 ])
 
@@ -23,6 +24,8 @@ LABEL_LINUX='linux'
 RUN_FULL_LOGPARSER_TEST = params.FULL_LOGPARSER_TEST
 // even more aggressive: with log editing
 RUN_FULL_LOGPARSER_TEST_WITH_LOG_EDIT = params.FULL_LOGPARSER_TEST_WITH_LOG_EDIT
+// test with many threads to check the time spent
+RUN_MANYTHREAD_TIMING_TEST = params.MANYTHREAD_TIMING_TEST
 
 // =============
 // = globals   =
@@ -908,8 +911,44 @@ def testLogparser() {
     }
 }
 
+// N threads with M groups of P lines all read logs regularly
+def testManyThreads(nbthread, nbloop, nbsubloop) {
+
+    torun = [:]
+    nbthread.times {
+        def id = it
+        def threadName = "parallel_${id}".toString()
+        torun[threadName] = {
+            node('linux') {
+                nbloop.times {
+                    def str = ''
+                    def it1 = it+1
+                    sh """#!/bin/bash +x
+                    i=\$(( 0 ))
+                    while [ \$i -lt ${nbsubloop} ]
+                    do
+                        echo \"thread ${threadName} / ${nbthread} loop ${it1} / ${nbloop} subloop \$i / ${nbsubloop}\"
+                        i=\$(( \$i + 1 ))
+                    done
+                    """
+                }
+                logparser.archiveLogsWithBranchInfo("${threadName}.txt", [ filter : [threadName] ])
+            }
+        }
+    }
+    stage("test ${nbthread} threads x ${nbloop} x ${nbsubloop} lines") {
+        timestamp {
+            parallel torun
+            logparser.archiveLogsWithBranchInfo("full_testManyThreads.txt")
+        }
+    }
+}
+
 // ===============
 // = run tests   =
 // ===============
 
 testLogparser()
+if (RUN_MANYTHREAD_TIMING_TEST) {
+    testManyThreads(50,20,500)
+}
