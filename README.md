@@ -11,7 +11,7 @@ Content:
   * it provides accessors to 'pipeline step' logs
   
 Compatibility:
-  * tested with 2.73.3, 2.190.1 & 2.249.3
+  * tested with 2.73.3, 2.190.1 & 2.263.4
 
 ## Table of contents
 - [Documentation](#documentation)
