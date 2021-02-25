@@ -13,7 +13,7 @@ Content:
   
 Compatibility:
   * tested with 2.190.1 & 2.263.4
-  * for earlier versions see version 1 (1.4 last tested with 2.73.3)
+  * for earlier versions see version 1 (1.4.1 last tested with 2.73.3)
 
 ## Table of contents
 - [Documentation](#documentation)
@@ -26,7 +26,7 @@ Compatibility:
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@2.0') _
+@Library('pipeline-logparser@2.0.1') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
 * _it may be different on your instance_
@@ -42,7 +42,7 @@ def mylog = logparser.getLogsWithBranchInfo()
 
 ### Detailed Documentation
 
-see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/2.0/vars/logparser.txt)  
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/2.0.1/vars/logparser.txt)  
 * _also available in $JOB_URL/pipeline-syntax/globals#logparser_
   * _visible only after the library has been imported once_
   * _requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity_
@@ -447,5 +447,11 @@ Note:
 * 1.4 (11/2020)
   - reformat nested branch markups when filtering is used
 
+* 1.4.1 (02/2021)
+  - optimize workflow steps parsing (avoid slowdown with large, and/or massively parallel, workflows)
+
 * 2.0 (11/2020)
   - new API to retrieve Blue Ocean URLs to logs of branches and stages
+
+* 2.0.1 (02/2021)
+  - optimize workflow steps parsing (avoid slowdown with large, and/or massively parallel, workflows)

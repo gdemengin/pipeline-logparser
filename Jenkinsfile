@@ -2,7 +2,7 @@
 
 
 // import logparser library
-@Library('pipeline-logparser@optim') _
+@Library('pipeline-logparser@2.0.1') _
 
 
 properties([
