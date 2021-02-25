@@ -14,70 +14,151 @@ def setVerbose(v) {
     this.verbose = v
 }
 
+@groovy.transform.Field
+def cachedTree = [:]
+
 // **********************
 // * INTERNAL FUNCTIONS *
 // **********************
-
 @NonCPS
-java.util.ArrayList _getNodeTree(build = currentBuild, _node = null, _branches=[], _stages=[]) {
-    def tree = []
-
+org.jenkinsci.plugins.workflow.job.views.FlowGraphAction _getFlowGraphAction(build) {
     def flowGraph = build.rawBuild.allActions.findAll { it.class == org.jenkinsci.plugins.workflow.job.views.FlowGraphAction }
     assert flowGraph.size() == 1
-    flowGraph = flowGraph[0]
+    return flowGraph[0]
+}
 
+@NonCPS
+org.jenkinsci.plugins.workflow.graph.FlowNode _getNode(flowGraph, id) {
+    def node = flowGraph.nodes.findAll{ it.id == id }
+    assert node.size() == 1
+    node = node[0]
+}
+
+@NonCPS
+org.jenkinsci.plugins.workflow.actions.LogAction _getLogAction(node) {
+    def logaction = \
+        node.actions.findAll {
+            it.class.name == 'org.jenkinsci.plugins.workflow.support.actions.LogActionImpl' ||
+            it.class.name == 'org.jenkinsci.plugins.workflow.support.actions.LogStorageAction'
+        }
+    assert logaction.size() == 1 || logaction.size() == 0
+
+    if (logaction.size() == 0) {
+        return null
+    }
+    return logaction[0]
+}
+
+@NonCPS
+java.util.LinkedHashMap _getNodeTree(build, _flowGraph = null, _node = null, _branches=[], _stages=[]) {
+    def key=build.getFullDisplayName()
+    if (this.cachedTree.containsKey(key) == false) {
+        this.cachedTree[key] = [:]
+    }
+
+    def flowGraph = _flowGraph
+    if (flowGraph == null) {
+        flowGraph = _getFlowGraphAction(build)
+    }
     def node = _node
     def name = null
     def stage = false
     def branches = _branches.collect{ it }
     def stages = _stages.collect { it }
 
-    if (node == null) {
-        def rootNode = flowGraph.nodes.findAll{ it.enclosingId == null && it.class == org.jenkinsci.plugins.workflow.graph.FlowStartNode }
-        assert rootNode.size() == 1
-        node = rootNode[0]
-        branches += [ node.id ]
-    } else if (node.class == org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode) {
-        if (node.descriptor instanceof org.jenkinsci.plugins.workflow.cps.steps.ParallelStep$DescriptorImpl) {
-            def labelAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.cps.steps.ParallelStepExecution$ParallelLabelAction }
-            assert labelAction.size() == 1 || labelAction.size() == 0
-            if (labelAction.size() == 1) {
-                name = labelAction[0].threadName
-                branches.add(0, node.id)
-            }
-        } else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.StageStep$DescriptorImpl) {
-            def labelAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.actions.LabelAction }
-            assert labelAction.size() == 1 || labelAction.size() == 0
-            if (labelAction.size() == 1) {
-                name = labelAction[0].displayName
-                stage = true
-                branches.add(0, node.id)
-                stages.add(0, node.id)
+    if (node == null || this.cachedTree[key].containsKey(node.id) == false || this.cachedTree[key][node.id].active) {
+        // fill in branches and stages lists for children (root branch + named branches/stages only)
+        if (node == null) {
+            def rootNode = flowGraph.nodes.findAll{ it.enclosingId == null && it.class == org.jenkinsci.plugins.workflow.graph.FlowStartNode }
+            assert rootNode.size() == 1
+            node = rootNode[0]
+            branches += [ node.id ]
+        } else if (node.class == org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode) {
+            if (node.descriptor instanceof org.jenkinsci.plugins.workflow.cps.steps.ParallelStep$DescriptorImpl) {
+                def labelAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.cps.steps.ParallelStepExecution$ParallelLabelAction }
+                assert labelAction.size() == 1 || labelAction.size() == 0
+                if (labelAction.size() == 1) {
+                    name = labelAction[0].threadName
+                    branches.add(0, node.id)
+                }
+            } else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.StageStep$DescriptorImpl) {
+                def labelAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.actions.LabelAction }
+                assert labelAction.size() == 1 || labelAction.size() == 0
+                if (labelAction.size() == 1) {
+                    name = labelAction[0].displayName
+                    stage = true
+                    branches.add(0, node.id)
+                    stages.add(0, node.id)
+                }
             }
         }
+
+        // add node information in tree
+        // get active state first
+        def active = node.isActive() == true
+        // get children AFTER active state (avoid incomplete list if state was still active)
+        def children = flowGraph.nodes.findAll{ it.enclosingId == node.id }.sort{ Integer.parseInt("${it.id}") }
+        def logaction = _getLogAction(node)
+
+        // add parent in tree first
+        if (this.cachedTree[key].containsKey(node.id) == false) {
+            this.cachedTree[key][node.id] = [ \
+                id: node.id,
+                name: name,
+                stage: stage,
+                parents: node.allEnclosingIds,
+                parent: node.enclosingId,
+                children: children.collect{ it.id },
+                branches: _branches,
+                stages: _stages,
+                active: active,
+                haslog: logaction != null,
+                displayFunctionName: node.displayFunctionName,
+                url: node.url
+            ]
+        } else {
+            // node exist in cached tree but was active last time it was updated: refresh its children and status
+            this.cachedTree[key][node.id].active = active
+            this.cachedTree[key][node.id].children = children.collect{ it.id }
+            this.cachedTree[key][node.id].haslog = logaction != null
+        }
+        // then add children
+        children.each{
+            _getNodeTree(build, flowGraph, it, branches, stages)
+        }
     }
+    // else : node was already put in tree while inactive, nothing to update
 
-    def children = flowGraph.nodes.findAll{ it.enclosingId == node.id }.sort{ Integer.parseInt("${it.id}") }
-    tree += [ [ id: node.id, node: node, name: name, stage: stage, parents: node.allEnclosingIds, parent: node.enclosingId, children: children.collect{ it.id }, branches: _branches, stages: _stages ] ]
-
-    children.each{ tree += _getNodeTree(build, it, branches, stages) }
-    return tree
+    return this.cachedTree[key]
 }
 
 //*******************************
 //* GENERATE URL TO BRANCH LOGS *
 //*******************************
+
+// add trailing / and remove any //
+@NonCPS
+String _cleanRootUrl(String urlIn) {
+    def urlOut = urlIn + '/'
+    urlOut = urlOut.replaceAll(/([^:])\/\/+/, '$1/')
+    return urlOut
+}
+
 @NonCPS
 java.util.ArrayList getBlueOceanUrls(build = currentBuild) {
+    // if JENKIN_URL not configured correctly, use placeholder
+    def jenkinsUrl = _cleanRootUrl(env.JENKINS_URL ?: '$JENKINS_URL')
+
     def rootUrl = null
     build.rawBuild.allActions.findAll { it.class == io.jenkins.blueocean.service.embedded.BlueOceanUrlAction }.each {
-        rootUrl = (env.JENKINS_URL ?: '$JENKINS_URL') + it.blueOceanUrlObject.url
+        rootUrl = _cleanRootUrl(jenkinsUrl + it.blueOceanUrlObject.url)
     }
     assert rootUrl != null
+
     // TODO : find a better way to do get the rest url for this build ...
     def blueProvider = new io.jenkins.blueocean.service.embedded.BlueOceanRootAction.BlueOceanUIProviderImpl()
     def buildenv = build.rawBuild.getEnvironment()
-    def restUrl = "${env.JENKINS_URL ?: '$JENKINS_URL/'}${blueProvider.getUrlBasePrefix()}/rest${blueProvider.getLandingPagePath()}${buildenv.JOB_NAME.replace('/','/pipelines/')}/runs/${buildenv.BUILD_NUMBER}/"
+    def restUrl = _cleanRootUrl("${jenkinsUrl}${blueProvider.getUrlBasePrefix()}/rest${blueProvider.getLandingPagePath()}${buildenv.JOB_NAME.replace('/','/pipelines/')}/runs/${buildenv.BUILD_NUMBER}")
 
     def tree = _getNodeTree(build)
     def ret = []
@@ -88,7 +169,7 @@ java.util.ArrayList getBlueOceanUrls(build = currentBuild) {
         print "tree=${tree}"
     }
 
-    tree.findAll{ it.parent == null || it.name != null }.each {
+    tree.values().findAll{ it.parent == null || it.name != null }.each {
         def url = "${rootUrl}pipeline/${it.id}"
         def log = "${restUrl}nodes/${it.id}/log/?start=0"
         if (it.parent == null) {
@@ -115,15 +196,13 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
         print "tree=${tree}"
     }
 
-    tree.each {
-        def url = "${env.JENKINS_URL ?: '$JENKINS_URL/'}${it.node.url}"
+    // if JENKIN_URL not configured correctly, use placeholder
+    def jenkinsUrl = _cleanRootUrl(env.JENKINS_URL ?: '$JENKINS_URL')
+
+    tree.values().each {
+        def url = _cleanRootUrl("${jenkinsUrl}${it.url}")
         def log = null
-        if (
-            it.node.actions.count {
-                it.class.name == 'org.jenkinsci.plugins.workflow.support.actions.LogActionImpl' ||
-                it.class.name == 'org.jenkinsci.plugins.workflow.support.actions.LogStorageAction'
-            } > 0
-        ) {
+        if (it.haslog) {
             log = "${url}log"
         }
         ret += [ [ id: it.id, name: it.name, stage: it.stage, parents: it.parents, parent: it.parent, children: it.children, url: url, log: log ] ]
@@ -182,7 +261,8 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
     }
     */
 
-    def tree = _getNodeTree(build)
+    def flowGraph = _getFlowGraphAction(build)
+    def tree = _getNodeTree(build, flowGraph)
 
     if (this.verbose) {
         print "tree=${tree}"
@@ -190,19 +270,17 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
 
     def keep = [:]
 
-    tree.each {
+    tree.values().each {
         def branches = it.branches.collect{ it }
         if (options.showStages == false) {
             branches = branches.minus(it.stages)
         }
         branches = branches.collect {
             def id = it
-            def item = tree.findAll {
-                it.id == id
-            }
-            assert item.size() == 1
-            assert item[0].name != null || item[0].parent == null
-            return item[0].name
+            def item = tree[id]
+            assert item != null
+            assert item.name != null || item.parent == null
+            return item.name
         }.findAll{ it != null }
         if (it.name != null) {
             if (it.stage == false || options.showStages == true) {
@@ -228,21 +306,19 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
             }
 
             if (options.hidePipeline == false) {
-                output += "[Pipeline] ${prefix}${it.node.displayFunctionName}\n"
+                output += "[Pipeline] ${prefix}${it.displayFunctionName}\n"
             }
 
-            def logaction = \
-                it.node.actions.findAll {
-                    it.class.name == 'org.jenkinsci.plugins.workflow.support.actions.LogActionImpl' ||
-                    it.class.name == 'org.jenkinsci.plugins.workflow.support.actions.LogStorageAction'
-                }
-            assert logaction.size() == 1 || logaction.size() == 0
-            if (logaction.size() == 1) {
+            if (it.haslog) {
+                def node = _getNode(flowGraph, it.id)
+                def logaction = _getLogAction(node)
+                assert logaction != null
+
                 ByteArrayOutputStream b = new ByteArrayOutputStream()
                 if (options.hideVT100) {
-                    logaction[0].logText.writeLogTo(0, b)
+                    logaction.logText.writeLogTo(0, b)
                 } else {
-                    logaction[0].logText.writeRawLogTo(0, b)
+                    logaction.logText.writeRawLogTo(0, b)
                 }
                 if (prefix != '') {
                     def str = b.toString()
