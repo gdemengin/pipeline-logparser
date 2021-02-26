@@ -917,7 +917,7 @@ def testManyThreads(nbthread, nbloop, nbsubloop) {
         }
     }
     stage("test ${nbthread} threads x ${nbloop} x ${nbsubloop} lines") {
-        timestamp {
+        timestamps {
             parallel torun
             logparser.archiveLogsWithBranchInfo("full_testManyThreads.txt")
         }
