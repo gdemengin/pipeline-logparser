@@ -1,4 +1,4 @@
-// sample pipeline to test https://github.com/gdemengin/pipeline-logparser/ "Global Pipeline Library" logparser
+// test pipeline for https://github.com/gdemengin/pipeline-logparser/
 
 
 // import logparser library
@@ -17,15 +17,17 @@ properties([
 // = constants   =
 // ===============
 
+// label on the instance with linux hosts
+// leave null if all hosts fit the description
 LABEL_LINUX='linux'
 
 // set to to true to run extra long tests
 // (multiple hours + may fail if not enough heap)
-RUN_FULL_LOGPARSER_TEST = params.FULL_LOGPARSER_TEST
+RUN_FULL_LOGPARSER_TEST = params.FULL_LOGPARSER_TEST == true
 // even more aggressive: with log editing
-RUN_FULL_LOGPARSER_TEST_WITH_LOG_EDIT = params.FULL_LOGPARSER_TEST_WITH_LOG_EDIT
+RUN_FULL_LOGPARSER_TEST_WITH_LOG_EDIT = params.FULL_LOGPARSER_TEST_WITH_LOG_EDIT == true
 // test with many threads to check the time spent
-RUN_MANYTHREAD_TIMING_TEST = params.MANYTHREAD_TIMING_TEST
+RUN_MANYTHREAD_TIMING_TEST = params.MANYTHREAD_TIMING_TEST == true
 
 // =============
 // = globals   =
@@ -293,6 +295,10 @@ def runStagesAndBranches(expectedLogMap, expectedLogMapWithStages) {
 // = parse logs and archive/check them   =
 // =======================================
 
+def archiveStringArtifact(name, buffer) {
+     logparser.archiveArtifactBuffer(name, buffer)
+}
+
 def checkLogs(log1, editedLog1, name1, log2, editedLog2, name2) {
     def tocmp1 = editedLog1 == null ? log1 : editedLog1
     def tocmp2 = editedLog2 == null ? log2 : editedLog2
@@ -300,16 +306,16 @@ def checkLogs(log1, editedLog1, name1, log2, editedLog2, name2) {
     if (tocmp1 != tocmp2) {
         // TODO: print side by side differences
         print "${name1} = '''\\\n${log1}'''"
-        logparser.archiveArtifactBuffer("check/${name1}.txt", log1)
+        archiveStringArtifact("check/${name1}.txt", log1)
         if (log1 != tocmp1) {
             print "${name1} (edited) ='''\\\n${tocmp1}'''"
-            logparser.archiveArtifactBuffer("check/${name1}.edited.txt", tocmp1)
+            archiveStringArtifact("check/${name1}.edited.txt", tocmp1)
         }
         print "${name2} = '''\\\n${log2}'''"
-        logparser.archiveArtifactBuffer("check/${name2}.txt", log2)
+        archiveStringArtifact("check/${name2}.txt", log2)
         if (log2 != tocmp2) {
             print "${name2} (edited) ='''\\\n${tocmp2}'''"
-            logparser.archiveArtifactBuffer("check/${name2}.edited.txt", tocmp2)
+            archiveStringArtifact("check/${name2}.edited.txt", tocmp2)
         }
         error "${name1} and ${name2} differ, see files in ${BUILD_URL}/artifact/check"
     } else {
@@ -471,44 +477,44 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     def logsBranch2NoParent = logparser.getLogsWithBranchInfo(filter:['branch2'], showParents:false)
 
     // archive the raw buffers for debug
-    logparser.archiveArtifactBuffer("dump/fullLog.txt", fullLog)
-    logparser.archiveArtifactBuffer("dump/logsNoBranch.txt", logsNoBranch)
-    logparser.archiveArtifactBuffer("dump/logsBranch0.txt", logsBranch0)
-    logparser.archiveArtifactBuffer("dump/logsBranch1.txt", logsBranch1)
-    logparser.archiveArtifactBuffer("dump/logsBranch2.txt", logsBranch2)
-    logparser.archiveArtifactBuffer("dump/logsBranch21.txt", logsBranch21)
-    logparser.archiveArtifactBuffer("dump/logsBranch22.txt", logsBranch22)
-    logparser.archiveArtifactBuffer("dump/logsBranch3.txt", logsBranch3)
-    logparser.archiveArtifactBuffer("dump/logsInit.txt", logsInit)
-    logparser.archiveArtifactBuffer("dump/logsEmpty.txt", logsEmpty)
-    logparser.archiveArtifactBuffer("dump/logsEndl.txt", logsEndl)
-    logparser.archiveArtifactBuffer("dump/logsMain.txt", logsMain)
-    logparser.archiveArtifactBuffer("dump/logsBuild.txt", logsBuild)
-    logparser.archiveArtifactBuffer("dump/logsTest.txt", logsTest)
-    logparser.archiveArtifactBuffer("dump/logsOne.txt", logsOne)
-    logparser.archiveArtifactBuffer("dump/logsTwo.txt", logsTwo)
-    logparser.archiveArtifactBuffer("dump/logsS2b1.txt", logsS2b1)
-    logparser.archiveArtifactBuffer("dump/logsS2b2.txt", logsS2b2)
+    archiveStringArtifact("dump/fullLog.txt", fullLog)
+    archiveStringArtifact("dump/logsNoBranch.txt", logsNoBranch)
+    archiveStringArtifact("dump/logsBranch0.txt", logsBranch0)
+    archiveStringArtifact("dump/logsBranch1.txt", logsBranch1)
+    archiveStringArtifact("dump/logsBranch2.txt", logsBranch2)
+    archiveStringArtifact("dump/logsBranch21.txt", logsBranch21)
+    archiveStringArtifact("dump/logsBranch22.txt", logsBranch22)
+    archiveStringArtifact("dump/logsBranch3.txt", logsBranch3)
+    archiveStringArtifact("dump/logsInit.txt", logsInit)
+    archiveStringArtifact("dump/logsEmpty.txt", logsEmpty)
+    archiveStringArtifact("dump/logsEndl.txt", logsEndl)
+    archiveStringArtifact("dump/logsMain.txt", logsMain)
+    archiveStringArtifact("dump/logsBuild.txt", logsBuild)
+    archiveStringArtifact("dump/logsTest.txt", logsTest)
+    archiveStringArtifact("dump/logsOne.txt", logsOne)
+    archiveStringArtifact("dump/logsTwo.txt", logsTwo)
+    archiveStringArtifact("dump/logsS2b1.txt", logsS2b1)
+    archiveStringArtifact("dump/logsS2b2.txt", logsS2b2)
 
-    logparser.archiveArtifactBuffer("dump/logsBranchStar.txt", logsBranchStar)
-    logparser.archiveArtifactBuffer("dump/logsS2b1S2b2.txt", logsS2b1S2b2)
-    logparser.archiveArtifactBuffer("dump/logsStar.txt", logsStar)
-    logparser.archiveArtifactBuffer("dump/logsFullStar.txt", logsFullStar)
+    archiveStringArtifact("dump/logsBranchStar.txt", logsBranchStar)
+    archiveStringArtifact("dump/logsS2b1S2b2.txt", logsS2b1S2b2)
+    archiveStringArtifact("dump/logsStar.txt", logsStar)
+    archiveStringArtifact("dump/logsFullStar.txt", logsFullStar)
 
-    logparser.archiveArtifactBuffer("dump/logsNoBranchWithStages.txt", logsNoBranchWithStages)
-    logparser.archiveArtifactBuffer("dump/logsS2b1WithStages.txt", logsS2b1WithStages)
-    logparser.archiveArtifactBuffer("dump/logsS2b2WithStages.txt", logsS2b2WithStages)
-    logparser.archiveArtifactBuffer("dump/logsStage1.txt", logsStage1)
-    logparser.archiveArtifactBuffer("dump/logsStage2.txt", logsStage2)
-    logparser.archiveArtifactBuffer("dump/logsStage3.txt", logsStage3)
+    archiveStringArtifact("dump/logsNoBranchWithStages.txt", logsNoBranchWithStages)
+    archiveStringArtifact("dump/logsS2b1WithStages.txt", logsS2b1WithStages)
+    archiveStringArtifact("dump/logsS2b2WithStages.txt", logsS2b2WithStages)
+    archiveStringArtifact("dump/logsStage1.txt", logsStage1)
+    archiveStringArtifact("dump/logsStage2.txt", logsStage2)
+    archiveStringArtifact("dump/logsStage3.txt", logsStage3)
 
-    logparser.archiveArtifactBuffer("dump/fullLogVT100.txt", fullLogVT100)
-    logparser.archiveArtifactBuffer("dump/fullLogPipeline.txt", fullLogPipeline)
-    logparser.archiveArtifactBuffer("dump/fullLogPipelineVT100.txt", fullLogPipelineVT100)
-    logparser.archiveArtifactBuffer("dump/fullLogNoNest.txt", fullLogNoNest)
-    logparser.archiveArtifactBuffer("dump/logsBranch2NoNest.txt", logsBranch2NoNest)
-    logparser.archiveArtifactBuffer("dump/logsBranch21NoParent.txt", logsBranch21NoParent)
-    logparser.archiveArtifactBuffer("dump/logsBranch2NoParent.txt", logsBranch2NoParent)
+    archiveStringArtifact("dump/fullLogVT100.txt", fullLogVT100)
+    archiveStringArtifact("dump/fullLogPipeline.txt", fullLogPipeline)
+    archiveStringArtifact("dump/fullLogPipelineVT100.txt", fullLogPipelineVT100)
+    archiveStringArtifact("dump/fullLogNoNest.txt", fullLogNoNest)
+    archiveStringArtifact("dump/logsBranch2NoNest.txt", logsBranch2NoNest)
+    archiveStringArtifact("dump/logsBranch21NoParent.txt", logsBranch21NoParent)
+    archiveStringArtifact("dump/logsBranch2NoParent.txt", logsBranch2NoParent)
 
     // 3/ detect if timestamp is set for all pipelines
     parallel \
@@ -578,44 +584,44 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
         logsBranch2NoParent = removeTimestamps(logsBranch2NoParent)
 
         // archive the raw buffers for debug
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/fullLog.txt", fullLog)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsNoBranch.txt", logsNoBranch)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBranch0.txt", logsBranch0)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBranch1.txt", logsBranch1)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBranch2.txt", logsBranch2)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBranch21.txt", logsBranch21)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBranch22.txt", logsBranch22)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBranch3.txt", logsBranch3)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsInit.txt", logsInit)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsEmpty.txt", logsEmpty)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsEndl.txt", logsEndl)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsMain.txt", logsMain)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBuild.txt", logsBuild)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsTest.txt", logsTest)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsOne.txt", logsOne)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsTwo.txt", logsTwo)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsS2b1.txt", logsS2b1)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsS2b2.txt", logsS2b2)
+        archiveStringArtifact("dump/removeTimestamps/fullLog.txt", fullLog)
+        archiveStringArtifact("dump/removeTimestamps/logsNoBranch.txt", logsNoBranch)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch0.txt", logsBranch0)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch1.txt", logsBranch1)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch2.txt", logsBranch2)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch21.txt", logsBranch21)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch22.txt", logsBranch22)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch3.txt", logsBranch3)
+        archiveStringArtifact("dump/removeTimestamps/logsInit.txt", logsInit)
+        archiveStringArtifact("dump/removeTimestamps/logsEmpty.txt", logsEmpty)
+        archiveStringArtifact("dump/removeTimestamps/logsEndl.txt", logsEndl)
+        archiveStringArtifact("dump/removeTimestamps/logsMain.txt", logsMain)
+        archiveStringArtifact("dump/removeTimestamps/logsBuild.txt", logsBuild)
+        archiveStringArtifact("dump/removeTimestamps/logsTest.txt", logsTest)
+        archiveStringArtifact("dump/removeTimestamps/logsOne.txt", logsOne)
+        archiveStringArtifact("dump/removeTimestamps/logsTwo.txt", logsTwo)
+        archiveStringArtifact("dump/removeTimestamps/logsS2b1.txt", logsS2b1)
+        archiveStringArtifact("dump/removeTimestamps/logsS2b2.txt", logsS2b2)
 
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBranchStar.txt", logsBranchStar)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsS2b1S2b2.txt", logsS2b1S2b2)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsStar.txt", logsStar)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsFullStar.txt", logsFullStar)
+        archiveStringArtifact("dump/removeTimestamps/logsBranchStar.txt", logsBranchStar)
+        archiveStringArtifact("dump/removeTimestamps/logsS2b1S2b2.txt", logsS2b1S2b2)
+        archiveStringArtifact("dump/removeTimestamps/logsStar.txt", logsStar)
+        archiveStringArtifact("dump/removeTimestamps/logsFullStar.txt", logsFullStar)
 
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsNoBranchWithStages.txt", logsNoBranchWithStages)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsS2b1WithStages.txt", logsS2b1WithStages)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsS2b2WithStages.txt", logsS2b2WithStages)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsStage1.txt", logsStage1)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsStage2.txt", logsStage2)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsStage3.txt", logsStage3)
+        archiveStringArtifact("dump/removeTimestamps/logsNoBranchWithStages.txt", logsNoBranchWithStages)
+        archiveStringArtifact("dump/removeTimestamps/logsS2b1WithStages.txt", logsS2b1WithStages)
+        archiveStringArtifact("dump/removeTimestamps/logsS2b2WithStages.txt", logsS2b2WithStages)
+        archiveStringArtifact("dump/removeTimestamps/logsStage1.txt", logsStage1)
+        archiveStringArtifact("dump/removeTimestamps/logsStage2.txt", logsStage2)
+        archiveStringArtifact("dump/removeTimestamps/logsStage3.txt", logsStage3)
 
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/fullLogVT100.txt", fullLogVT100)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/fullLogPipeline.txt", fullLogPipeline)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/fullLogPipelineVT100.txt", fullLogPipelineVT100)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/fullLogNoNest.txt", fullLogNoNest)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBranch2NoNest.txt", logsBranch2NoNest)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBranch21NoParent.txt", logsBranch21NoParent)
-        logparser.archiveArtifactBuffer("dump/removeTimestamps/logsBranch2NoParent.txt", logsBranch2NoParent)
+        archiveStringArtifact("dump/removeTimestamps/fullLogVT100.txt", fullLogVT100)
+        archiveStringArtifact("dump/removeTimestamps/fullLogPipeline.txt", fullLogPipeline)
+        archiveStringArtifact("dump/removeTimestamps/fullLogPipelineVT100.txt", fullLogPipelineVT100)
+        archiveStringArtifact("dump/removeTimestamps/fullLogNoNest.txt", fullLogNoNest)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch2NoNest.txt", logsBranch2NoNest)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch21NoParent.txt", logsBranch21NoParent)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch2NoParent.txt", logsBranch2NoParent)
     }
 
     // then strip node logs
@@ -624,10 +630,10 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     logsStar = stripNodeLogs(logsStar, 2)
     logsFullStar = stripNodeLogs(logsFullStar, 2)
 
-    logparser.archiveArtifactBuffer("dump/stripNodeLogs/logsOne.txt", logsOne)
-    logparser.archiveArtifactBuffer("dump/stripNodeLogs/logsTwo.txt", logsTwo)
-    logparser.archiveArtifactBuffer("dump/stripNodeLogs/logsStar.txt", logsStar)
-    logparser.archiveArtifactBuffer("dump/stripNodeLogs/logsFullStar.txt", logsFullStar)
+    archiveStringArtifact("dump/stripNodeLogs/logsOne.txt", logsOne)
+    archiveStringArtifact("dump/stripNodeLogs/logsTwo.txt", logsTwo)
+    archiveStringArtifact("dump/stripNodeLogs/logsStar.txt", logsStar)
+    archiveStringArtifact("dump/stripNodeLogs/logsFullStar.txt", logsFullStar)
 
 
     // 4/ check log content
