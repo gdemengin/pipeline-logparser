@@ -1,10 +1,6 @@
 // test pipeline for https://github.com/gdemengin/pipeline-logparser/
 
 
-// import logparser library
-@Library('pipeline-logparser@2.0.1') _
-
-
 properties([
     parameters([
         booleanParam(defaultValue: false, description: 'set to to true to run extra long tests (multiple hours + may fail if not enough heap)', name: 'FULL_LOGPARSER_TEST'),
@@ -28,6 +24,17 @@ RUN_FULL_LOGPARSER_TEST = params.FULL_LOGPARSER_TEST == true
 RUN_FULL_LOGPARSER_TEST_WITH_LOG_EDIT = params.FULL_LOGPARSER_TEST_WITH_LOG_EDIT == true
 // test with many threads to check the time spent
 RUN_MANYTHREAD_TIMING_TEST = params.MANYTHREAD_TIMING_TEST == true
+
+// ============================
+// = import logparser library =
+// ============================
+// @Library('pipeline-logparser@2.0.1') _
+node(LABEL_LINUX) {
+    checkout scm
+    def rev=sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
+    library(identifier: "pipeline-logparser@${rev}", changelog: false)
+}
+
 
 // =============
 // = globals   =
@@ -925,7 +932,7 @@ def testManyThreads(nbthread, nbloop, nbsubloop) {
         def id = it
         def threadName = "parallel_${id}".toString()
         torun[threadName] = {
-            node('linux') {
+            node(LABEL_LINUX) {
                 nbloop.times {
                     def str = ''
                     def it1 = it+1
