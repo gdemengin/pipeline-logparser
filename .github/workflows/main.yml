@@ -5,6 +5,6 @@ jobs:
     runs-on: ubuntu-latest
     name: test on jenkins-lts
     steps:
+      - uses: actions/checkout@v2
       - name: test jenkins-lts
-        id: jenkins-lts
-        uses: gdemengin/pipeline-logparser@test
+        uses: ./jenkins-lts/

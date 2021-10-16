@@ -1,4 +1,4 @@
 name: 'jenkins-lts'
 runs:
   using: 'docker'
-  image: 'jenkins-lts/Dockerfile'
+  image: './Dockerfile'
