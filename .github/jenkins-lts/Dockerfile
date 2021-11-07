@@ -25,6 +25,39 @@ RUN dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')" \
  && chmod +x /usr/local/bin/gosu \
  && gosu nobody true
 
+# install docker
+# if install fails, command apt-cache madison docker-ce below shall list the list of available versions
+# or you can leave it empty
+ARG DOCKER_CLI_VERSION==5:20.10.8~3-0~debian-bullseye
+# ARG DOCKER_CLI_VERSION=
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
+ && add-apt-repository \
+     "deb [arch=amd64] https://download.docker.com/linux/debian \
+     $(lsb_release -cs) \
+     stable" \
+ && apt-get update \
+ && echo "lsb_release -cs=$(lsb_release -cs)" && apt-cache madison docker-ce \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    docker-ce-cli${DOCKER_CLI_VERSION} \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* \
+ && groupadd -r docker \
+ && usermod -aG docker jenkins
+
+# install k8s + minikube + kind
+RUN apt-get update \
+&& curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - \
+&& echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list \
+&& apt-get update \
+&& apt-get install -y kubectl conntrack iptables sudo \
+&& curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+&& chmod +x minikube \
+&& install minikube /usr/local/bin/ \
+&& curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/0.1.0/kind-linux-amd64 \
+&& chmod +x kind \
+&& mv kind /usr/local/bin/
+
+
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --verbose --plugin-file /usr/share/jenkins/ref/plugins.txt
 
