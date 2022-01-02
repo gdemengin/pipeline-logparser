@@ -264,7 +264,7 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
     options = defaultOptions.plus(options)
     options.keySet().each{ assert it in ['filter', 'showParents', 'showStages', 'markNestedFiltered', 'mergeNestedDuplicates', 'hidePipeline', 'hideVT100'], "invalid option $it" }
     // make sure there is no type mismatch when comparing elements of options.filter
-    options.filter = options.filter.collect{ it != null ? it.toString() : null }
+    options.filter = options.filter.collect{ it != null ? (it in CharSequence ? it.toString() : it) : null }
 
     /* TODO: option to show logs before start of pipeline
     if (options.filter.size() == 0 || null in options.filter) {
@@ -320,7 +320,15 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
         keep."${it.id}" = \
             options.filter.size() == 0 ||
             (branches.size() == 0 && null in options.filter) ||
-            (branches.size() > 0 && options.filter.count{ it != null && branches[0] ==~ /^${it}$/ } > 0)
+            (branches.size() > 0 && options.filter.count{ it != null && it in CharSequence && branches[0] ==~ /^${it}$/ } > 0) ||
+            (branches.size() > 0 && options.filter.count{
+                if (it != null && it in Collection && branches.size() >= it.size()) {
+                    def index = 0
+                    it.count { pattern ->
+                        branches[it.size() - index++ - 1] ==~ /^${pattern}$/
+                    } == it.size()
+                }
+            } > 0)
 
         if (keep."${it.id}") {
             // no filtering or kept branch: keep logs
