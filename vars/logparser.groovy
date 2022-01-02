@@ -259,10 +259,10 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
     def output = ''
 
     // 1/ parse options
-    def defaultOptions = [ filter: [], showParents: true, showStages: false, markNestedFiltered: true, hidePipeline: true, hideVT100: true ]
+    def defaultOptions = [ filter: [], showParents: true, showStages: false, markNestedFiltered: true, hidePipeline: true, hideVT100: true, mergeNestedDuplicates: true ]
     // merge 2 maps with priority to options values
     options = defaultOptions.plus(options)
-    options.keySet().each{ assert it in ['filter', 'showParents', 'showStages', 'markNestedFiltered', 'hidePipeline', 'hideVT100'], "invalid option $it" }
+    options.keySet().each{ assert it in ['filter', 'showParents', 'showStages', 'markNestedFiltered', 'mergeNestedDuplicates', 'hidePipeline', 'hideVT100'], "invalid option $it" }
     // make sure there is no type mismatch when comparing elements of options.filter
     options.filter = options.filter.collect{ it != null ? it.toString() : null }
 
@@ -303,6 +303,17 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
         if (it.name != null) {
             if (it.stage == false || options.showStages == true) {
                 branches.add(0, it.name)
+            }
+        }
+
+        // remove consecutive duplicates
+        // this would happen if 2 nested parallel steps or stages have the same name
+        // which is exactly what happens in declarative matrix (parallel step xxx contain stage xxx)
+        // TODO add option to keep duplicate branch names
+        if (options.mergeNestedDuplicates) {
+            def i = 0
+            branches = branches.findAll {
+                i++ == 0 || branches[i - 2] != it
             }
         }
 
