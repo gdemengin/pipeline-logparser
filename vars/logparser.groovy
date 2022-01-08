@@ -271,7 +271,7 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
 @NonCPS
 java.util.LinkedHashMap _parseOptions(java.util.LinkedHashMap options = [:])
 {
-    def defaultOptions = [ filter: [], showParents: true, showStages: false, markNestedFiltered: true, hidePipeline: true, hideVT100: true, mergeNestedDuplicates: true ]
+    def defaultOptions = [ filter: [], showParents: true, showStages: true, markNestedFiltered: true, hidePipeline: true, hideVT100: true, mergeNestedDuplicates: true ]
     // merge 2 maps with priority to options values
     def new_options = defaultOptions.plus(options)
     new_options.keySet().each{ assert it in ['filter', 'showParents', 'showStages', 'markNestedFiltered', 'mergeNestedDuplicates', 'hidePipeline', 'hideVT100'], "invalid option $it" }
@@ -305,7 +305,7 @@ Boolean _keepBranches(java.util.ArrayList branches, java.util.ArrayList filter) 
 //      "<nested branch [branch2] [branch21]"
 // - without VT100 markups if options.hideVT100 is true (default)
 // - without Pipeline technical logs if options.hidePipeline is true (default)
-// - with stage information if showStage is true (default false)
+// - with stage information if showStage is true (default true)
 // - with duplicate branch names removed if mergeNestedDuplicates is true (default true)
 //
 // cf https://stackoverflow.com/questions/38304403/jenkins-pipeline-how-to-get-logs-from-parallel-builds
