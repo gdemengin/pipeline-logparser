@@ -389,14 +389,24 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
                 }
             }
         } else if (opt.markNestedFiltered && it.name != null && it.parents.findAll { keep."${it}" }.size() > 0) {
-            // branch is not kept (not in filter) but one of its parent branch is kept: record it as filtered
-            def prefix = null
-            if (opt.showParents) {
-                prefix = branches.reverse().collect{ "[$it]" }.join(' ')
-            } else {
-                prefix = "[${branches[0]}]"
+            def showNestedMarker = true
+            if (opt.mergeNestedDuplicates) {
+                def branchesWithDuplicates = _getBranches(tree, it.id, opt.showStages, false)
+                if (branchesWithDuplicates.size() > 1 && branchesWithDuplicates[1] == it.name) {
+                    // this is already a duplicate branch merged into its parent : marker was already put for parent branch
+                    showNestedMarker = false
+                }
             }
-            output += "<nested branch ${prefix}>\n"
+            if (showNestedMarker) {
+                // branch is not kept (not in filter) but one of its parent branch is kept: record it as filtered
+                def prefix = null
+                if (opt.showParents) {
+                    prefix = branches.reverse().collect{ "[$it]" }.join(' ')
+                } else {
+                    prefix = "[${branches[0]}]"
+                }
+                output += "<nested branch ${prefix}>\n"
+            }
         }
         // else none of the parent branches is kept, skip this one entirely
     }
