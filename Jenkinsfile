@@ -28,7 +28,7 @@ RUN_MANYTHREAD_TIMING_TEST = params.MANYTHREAD_TIMING_TEST == true
 // ============================
 // = import logparser library =
 // ============================
-// @Library('pipeline-logparser@2.0.1') _
+// @Library('pipeline-logparser@3.0') _
 node(LABEL_LINUX) {
     checkout scm
     def rev=sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
@@ -68,7 +68,7 @@ def testBranch(name, loop, expectedLogMap) {
     expectedLogMap."$name" += line + '\n'
 }
 
-def runBranches(expectedLogMap) {
+def runBranches(expectedLogMap, expectedLogMapWithDuplicate) {
     def line
     def branches = [:]
     def loop=2
@@ -99,10 +99,11 @@ def runBranches(expectedLogMap) {
             testBranch('branch2.branch22', loop, expectedLogMap)
         }
 
-        // see how we manage to have 2 branches with the same name
+        // see how we manage 2 branches with the same name (not nested)
         nestedBranches.branch1 = {
             testBranch('branch2.branch1', loop, expectedLogMap)
         }
+
         parallel nestedBranches
         expectedLogMap.'branch2' += '<nested branch [branch2] [branch21]>\n'
         expectedLogMap.'branch2' += '<nested branch [branch2] [branch22]>\n'
@@ -129,6 +130,22 @@ def runBranches(expectedLogMap) {
     line='this log is not in any branch'
     echo line
     expectedLogMap."null" += line + '\n'
+
+    expectedLogMapWithDuplicates = expectedLogMap
+    branches = [:]
+    branches.branch4 = {
+        def nestedBranches = [:]
+        // see how we manage 2 branches with the same name (nested)
+        nestedBranches.branch4 = {
+            line='in branch4.branch4'
+            echo line
+            expectedLogMap.'branch4' = line + '\n'
+            expectedLogMapWithDuplicates.'branch4' = line + '\n'
+        }
+        parallel nestedBranches
+    }
+    parallel branches
+    expectedLogMap.'null' += '<nested branch [branch4]>\n'
 }
 
 def runSingleBranches(expectedLogMap) {
@@ -244,7 +261,7 @@ def runBranchesWithManyLines(nblines, expectedLogMap) {
     }
 }
 
-def runStagesAndBranches(expectedLogMap, expectedLogMapWithStages) {
+def runStagesAndBranches(expectedLogMapWithStages, expectedLogMap) {
     def line = 'testing stages'
     print line
     expectedLogMap.'null' += line + '\n'
@@ -398,7 +415,7 @@ def unsortedCompare(log1, log2) {
     checkLogs(sortedLog1, null, 'sortedLog1', sortedLog2, null, 'sortedLog2')
 }
 
-def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
+def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDuplicates, begin, end) {
     // 1/ archivelogs (for manual check)
 
     // archive full logs
@@ -408,32 +425,44 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
         print 'after parsing and archiving consoleText.txt'
 
         print 'before parsing and archiving branch0.txt'
-        logparser.archiveLogsWithBranchInfo('branch0.txt', [filter: ['branch0']])
+        logparser.archiveLogsWithBranchInfo('branch0.txt', [ filter: ['branch0'] ])
         print 'after parsing and archiving branch0.txt'
 
         print 'before parsing and archiving full.txt'
-        logparser.archiveLogsWithBranchInfo('full.txt', [ showStages: true, hidePipeline: false, hideVT100: false ])
+        logparser.archiveLogsWithBranchInfo('full.txt', [ hidePipeline: false, hideVT100: false ])
         print 'after parsing and archiving full.txt'
 
+        print 'before parsing and archiving fullNoStages.txt'
+        logparser.archiveLogsWithBranchInfo('fullNoStages.txt', [ showStages: false, hidePipeline: false, hideVT100: false ])
+        print 'after parsing and archiving fullNoStages.txt'
+
         print 'before parsing and archiving branch2.txt'
-        logparser.archiveLogsWithBranchInfo('branch2.txt', [filter: ['branch2']])
+        logparser.archiveLogsWithBranchInfo('branch2.txt', [ filter: ['branch2'] ])
         print 'after parsing and archiving branch2.txt'
 
         print 'before parsing and archiving branch2NoNested.txt'
-        logparser.archiveLogsWithBranchInfo('branch2NoNested.txt', [filter: ['branch2'], markNestedFiltered: false ])
+        logparser.archiveLogsWithBranchInfo('branch2NoNested.txt', [ filter: ['branch2'], markNestedFiltered: false ])
         print 'after parsing and archiving branch2NoNested.txt'
 
         print 'before parsing and archiving branch2NoParent.txt'
-        logparser.archiveLogsWithBranchInfo('branch2NoParent.txt', [filter: ['branch2'], showParents: false ])
+        logparser.archiveLogsWithBranchInfo('branch2NoParent.txt', [ filter: ['branch2'], showParents: false ])
         print 'after parsing and archiving branch2NoParent.txt'
 
         print 'before parsing and archiving branch21.txt'
-        logparser.archiveLogsWithBranchInfo('branch21.txt', [filter: ['branch21']])
+        logparser.archiveLogsWithBranchInfo('branch21.txt', [ filter: ['branch21'] ])
         print 'after parsing and archiving branch21.txt'
 
         print 'before parsing and archiving branch21NoParent.txt'
-        logparser.archiveLogsWithBranchInfo('branch21NoParent.txt', [filter: ['branch21'], showParents: false])
+        logparser.archiveLogsWithBranchInfo('branch21NoParent.txt', [ filter: ['branch21'], showParents: false ])
         print 'after parsing and archiving branch21NoParent.txt'
+
+        print 'before parsing and archiving branch4.txt'
+        logparser.archiveLogsWithBranchInfo('branch4.txt', [ filter: ['branch4'] ])
+        print 'after parsing and archiving branch4.txt'
+
+        print 'before parsing and archiving branch4WithDuplicates.txt'
+        logparser.archiveLogsWithBranchInfo('branch4WithDuplicates.txt', [ filter: ['branch4'], mergeNestedDuplicates: false ])
+        print 'after parsing and archiving branch4WithDuplicates.txt'
     }
 
     // 2/ access logs programmatically using various options
@@ -449,6 +478,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     def logsBranch21 = logparser.getLogsWithBranchInfo(filter:['branch21'])
     def logsBranch22 = logparser.getLogsWithBranchInfo(filter:['branch22'])
     def logsBranch3 = logparser.getLogsWithBranchInfo(filter:['branch3'])
+    def logsBranch4 = logparser.getLogsWithBranchInfo(filter:['branch4'])
     def logsInit = logparser.getLogsWithBranchInfo(filter:['init'])
     def logsEmpty = logparser.getLogsWithBranchInfo(filter:['empty'])
     def logsEndl = logparser.getLogsWithBranchInfo(filter:['endl'])
@@ -459,6 +489,9 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     def logsTwo = logparser.getLogsWithBranchInfo(filter:['two'])
     def logsS2b1 = logparser.getLogsWithBranchInfo(filter:['s2b1'])
     def logsS2b2 = logparser.getLogsWithBranchInfo(filter:['s2b2'])
+    def logsStage1 = logparser.getLogsWithBranchInfo(filter:[ 'stage1' ])
+    def logsStage2 = logparser.getLogsWithBranchInfo(filter:[ 'stage2' ])
+    def logsStage3 = logparser.getLogsWithBranchInfo(filter:[ 'stage3' ])
 
     // multiple branches
     def logsBranchStar = logparser.getLogsWithBranchInfo(filter:[ 'branch.*' ])
@@ -467,12 +500,13 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     def logsFullStar = logparser.getLogsWithBranchInfo(filter:[ null, '.*' ])
 
     // stages
-    def logsNoBranchWithStages = logparser.getLogsWithBranchInfo(filter:[null], showStages:true)
-    def logsS2b1WithStages = logparser.getLogsWithBranchInfo(filter:[ 's2b1' ], showStages:true)
-    def logsS2b2WithStages = logparser.getLogsWithBranchInfo(filter:[ 's2b2' ], showStages:true)
-    def logsStage1 = logparser.getLogsWithBranchInfo(filter:[ 'stage1' ], showStages:true)
-    def logsStage2 = logparser.getLogsWithBranchInfo(filter:[ 'stage2' ], showStages:true)
-    def logsStage3 = logparser.getLogsWithBranchInfo(filter:[ 'stage3' ], showStages:true)
+    def logsNoBranchWithoutStages = logparser.getLogsWithBranchInfo(filter:[null], showStages:false)
+    def logsS2b1WithoutStages = logparser.getLogsWithBranchInfo(filter:[ 's2b1' ], showStages:false)
+    def logsS2b2WithoutStages = logparser.getLogsWithBranchInfo(filter:[ 's2b2' ], showStages:false)
+
+    // filter using parents
+    def logsBranch1InBranch2 = logparser.getLogsWithBranchInfo(filter:[ [ 'branch2', 'branch1' ] ])
+    def logsBranch1InAny = logparser.getLogsWithBranchInfo(filter:[ [ '.*', 'branch1' ] ])
 
     // other options
     def fullLogVT100 = logparser.getLogsWithBranchInfo([hideVT100:false])
@@ -482,6 +516,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     def logsBranch2NoNest = logparser.getLogsWithBranchInfo(filter:['branch2'], markNestedFiltered:false)
     def logsBranch21NoParent = logparser.getLogsWithBranchInfo(filter:['branch21'], showParents:false)
     def logsBranch2NoParent = logparser.getLogsWithBranchInfo(filter:['branch2'], showParents:false)
+    def logsBranch4WithDuplicates = logparser.getLogsWithBranchInfo(filter:['branch4'], mergeNestedDuplicates:false)
 
     // archive the raw buffers for debug
     archiveStringArtifact("dump/fullLog.txt", fullLog)
@@ -492,6 +527,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     archiveStringArtifact("dump/logsBranch21.txt", logsBranch21)
     archiveStringArtifact("dump/logsBranch22.txt", logsBranch22)
     archiveStringArtifact("dump/logsBranch3.txt", logsBranch3)
+    archiveStringArtifact("dump/logsBranch4.txt", logsBranch4)
     archiveStringArtifact("dump/logsInit.txt", logsInit)
     archiveStringArtifact("dump/logsEmpty.txt", logsEmpty)
     archiveStringArtifact("dump/logsEndl.txt", logsEndl)
@@ -502,18 +538,21 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     archiveStringArtifact("dump/logsTwo.txt", logsTwo)
     archiveStringArtifact("dump/logsS2b1.txt", logsS2b1)
     archiveStringArtifact("dump/logsS2b2.txt", logsS2b2)
+    archiveStringArtifact("dump/logsStage1.txt", logsStage1)
+    archiveStringArtifact("dump/logsStage2.txt", logsStage2)
+    archiveStringArtifact("dump/logsStage3.txt", logsStage3)
 
     archiveStringArtifact("dump/logsBranchStar.txt", logsBranchStar)
     archiveStringArtifact("dump/logsS2b1S2b2.txt", logsS2b1S2b2)
     archiveStringArtifact("dump/logsStar.txt", logsStar)
     archiveStringArtifact("dump/logsFullStar.txt", logsFullStar)
 
-    archiveStringArtifact("dump/logsNoBranchWithStages.txt", logsNoBranchWithStages)
-    archiveStringArtifact("dump/logsS2b1WithStages.txt", logsS2b1WithStages)
-    archiveStringArtifact("dump/logsS2b2WithStages.txt", logsS2b2WithStages)
-    archiveStringArtifact("dump/logsStage1.txt", logsStage1)
-    archiveStringArtifact("dump/logsStage2.txt", logsStage2)
-    archiveStringArtifact("dump/logsStage3.txt", logsStage3)
+    archiveStringArtifact("dump/logsNoBranchWithoutStages.txt", logsNoBranchWithoutStages)
+    archiveStringArtifact("dump/logsS2b1WithoutStages.txt", logsS2b1WithoutStages)
+    archiveStringArtifact("dump/logsS2b2WithoutStages.txt", logsS2b2WithoutStages)
+
+    archiveStringArtifact("dump/logsBranch1InBranch2.txt", logsBranch1InBranch2)
+    archiveStringArtifact("dump/logsBranch1InAny.txt", logsBranch1InAny)
 
     archiveStringArtifact("dump/fullLogVT100.txt", fullLogVT100)
     archiveStringArtifact("dump/fullLogPipeline.txt", fullLogPipeline)
@@ -522,6 +561,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     archiveStringArtifact("dump/logsBranch2NoNest.txt", logsBranch2NoNest)
     archiveStringArtifact("dump/logsBranch21NoParent.txt", logsBranch21NoParent)
     archiveStringArtifact("dump/logsBranch2NoParent.txt", logsBranch2NoParent)
+    archiveStringArtifact("dump/logsBranch4WithDuplicates.txt", logsBranch4WithDuplicates)
 
     // 3/ detect if timestamp is set for all pipelines
     parallel \
@@ -559,6 +599,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
         logsBranch21 = removeTimestamps(logsBranch21)
         logsBranch22 = removeTimestamps(logsBranch22)
         logsBranch3 = removeTimestamps(logsBranch3)
+        logsBranch4 = removeTimestamps(logsBranch4)
         logsInit = removeTimestamps(logsInit)
         logsEmpty = removeTimestamps(logsEmpty)
         logsEndl = removeTimestamps(logsEndl)
@@ -569,18 +610,21 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
         logsTwo = removeTimestamps(logsTwo)
         logsS2b1 = removeTimestamps(logsS2b1)
         logsS2b2 = removeTimestamps(logsS2b2)
+        logsStage1 = removeTimestamps(logsStage1)
+        logsStage2 = removeTimestamps(logsStage2)
+        logsStage3 = removeTimestamps(logsStage3)
 
         logsBranchStar = removeTimestamps(logsBranchStar)
         logsS2b1S2b2 = removeTimestamps(logsS2b1S2b2)
         logsStar = removeTimestamps(logsStar)
         logsFullStar = removeTimestamps(logsFullStar)
 
-        logsNoBranchWithStages = removeTimestamps(logsNoBranchWithStages)
-        logsS2b1WithStages = removeTimestamps(logsS2b1WithStages)
-        logsS2b2WithStages = removeTimestamps(logsS2b2WithStages)
-        logsStage1 = removeTimestamps(logsStage1)
-        logsStage2 = removeTimestamps(logsStage2)
-        logsStage3 = removeTimestamps(logsStage3)
+        logsNoBranchWithoutStages = removeTimestamps(logsNoBranchWithoutStages)
+        logsS2b1WithoutStages = removeTimestamps(logsS2b1WithoutStages)
+        logsS2b2WithoutStages = removeTimestamps(logsS2b2WithoutStages)
+
+        logsBranch1InBranch2 = removeTimestamps(logsBranch1InBranch2)
+        logsBranch1InAny = removeTimestamps(logsBranch1InAny)
 
         fullLogVT100 = removeTimestamps(fullLogVT100)
         fullLogPipeline = removeTimestamps(fullLogPipeline)
@@ -589,6 +633,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
         logsBranch2NoNest = removeTimestamps(logsBranch2NoNest)
         logsBranch21NoParent = removeTimestamps(logsBranch21NoParent)
         logsBranch2NoParent = removeTimestamps(logsBranch2NoParent)
+        logsBranch4WithDuplicates = removeTimestamps(logsBranch4WithDuplicates)
 
         // archive the raw buffers for debug
         archiveStringArtifact("dump/removeTimestamps/fullLog.txt", fullLog)
@@ -599,6 +644,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
         archiveStringArtifact("dump/removeTimestamps/logsBranch21.txt", logsBranch21)
         archiveStringArtifact("dump/removeTimestamps/logsBranch22.txt", logsBranch22)
         archiveStringArtifact("dump/removeTimestamps/logsBranch3.txt", logsBranch3)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch4.txt", logsBranch4)
         archiveStringArtifact("dump/removeTimestamps/logsInit.txt", logsInit)
         archiveStringArtifact("dump/removeTimestamps/logsEmpty.txt", logsEmpty)
         archiveStringArtifact("dump/removeTimestamps/logsEndl.txt", logsEndl)
@@ -609,18 +655,21 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
         archiveStringArtifact("dump/removeTimestamps/logsTwo.txt", logsTwo)
         archiveStringArtifact("dump/removeTimestamps/logsS2b1.txt", logsS2b1)
         archiveStringArtifact("dump/removeTimestamps/logsS2b2.txt", logsS2b2)
+        archiveStringArtifact("dump/removeTimestamps/logsStage1.txt", logsStage1)
+        archiveStringArtifact("dump/removeTimestamps/logsStage2.txt", logsStage2)
+        archiveStringArtifact("dump/removeTimestamps/logsStage3.txt", logsStage3)
 
         archiveStringArtifact("dump/removeTimestamps/logsBranchStar.txt", logsBranchStar)
         archiveStringArtifact("dump/removeTimestamps/logsS2b1S2b2.txt", logsS2b1S2b2)
         archiveStringArtifact("dump/removeTimestamps/logsStar.txt", logsStar)
         archiveStringArtifact("dump/removeTimestamps/logsFullStar.txt", logsFullStar)
 
-        archiveStringArtifact("dump/removeTimestamps/logsNoBranchWithStages.txt", logsNoBranchWithStages)
-        archiveStringArtifact("dump/removeTimestamps/logsS2b1WithStages.txt", logsS2b1WithStages)
-        archiveStringArtifact("dump/removeTimestamps/logsS2b2WithStages.txt", logsS2b2WithStages)
-        archiveStringArtifact("dump/removeTimestamps/logsStage1.txt", logsStage1)
-        archiveStringArtifact("dump/removeTimestamps/logsStage2.txt", logsStage2)
-        archiveStringArtifact("dump/removeTimestamps/logsStage3.txt", logsStage3)
+        archiveStringArtifact("dump/removeTimestamps/logsNoBranchWithoutStages.txt", logsNoBranchWithoutStages)
+        archiveStringArtifact("dump/removeTimestamps/logsS2b1WithoutStages.txt", logsS2b1WithoutStages)
+        archiveStringArtifact("dump/removeTimestamps/logsS2b2WithoutStages.txt", logsS2b2WithoutStages)
+
+        archiveStringArtifact("dump/removeTimestamps/logsBranch1InBranch2.txt", logsBranch1InBranch2)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch1InAny.txt", logsBranch1InAny)
 
         archiveStringArtifact("dump/removeTimestamps/fullLogVT100.txt", fullLogVT100)
         archiveStringArtifact("dump/removeTimestamps/fullLogPipeline.txt", fullLogPipeline)
@@ -629,6 +678,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
         archiveStringArtifact("dump/removeTimestamps/logsBranch2NoNest.txt", logsBranch2NoNest)
         archiveStringArtifact("dump/removeTimestamps/logsBranch21NoParent.txt", logsBranch21NoParent)
         archiveStringArtifact("dump/removeTimestamps/logsBranch2NoParent.txt", logsBranch2NoParent)
+        archiveStringArtifact("dump/removeTimestamps/logsBranch4WithDuplicates.txt", logsBranch4WithDuplicates)
     }
 
     // then strip node logs
@@ -656,6 +706,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     checkBranchLogs(logsBranch21, 'branch21', expectedBranchLogs(expectedLogMap, 'branch2.branch21', '[branch2] [branch21] '))
     checkBranchLogs(logsBranch22, 'branch22', expectedBranchLogs(expectedLogMap, 'branch2.branch22', '[branch2] [branch22] '))
     checkBranchLogs(logsBranch3, 'branch3', expectedBranchLogs(expectedLogMap, 'branch3', '[branch3] '))
+    checkBranchLogs(logsBranch4, 'branch4', expectedBranchLogs(expectedLogMap, 'branch4', '[branch4] '))
     checkBranchLogs(logsInit, 'init', expectedBranchLogs(expectedLogMap, 'init', '[init] '))
     checkBranchLogs(logsEmpty, 'empty', expectedBranchLogs(expectedLogMap, 'empty', '[empty] '))
     checkBranchLogs(logsEndl, 'endl', expectedBranchLogs(expectedLogMap, 'endl', '[endl] '))
@@ -664,15 +715,19 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
     checkBranchLogs(logsTest, 'test', expectedBranchLogs(expectedLogMap, 'main.test', '[main] [test] '))
     checkBranchLogs(logsOne, 'one', expectedBranchLogs(expectedLogMap, 'one', '[one] '))
     checkBranchLogs(logsTwo, 'two', expectedBranchLogs(expectedLogMap, 'two', '[two] '))
-    checkBranchLogs(logsS2b1, 's2b1', expectedBranchLogs(expectedLogMap, 's2b1', '[s2b1] '))
-    checkBranchLogs(logsS2b2, 's2b2', expectedBranchLogs(expectedLogMap, 's2b2', '[s2b2] '))
+    checkBranchLogs(logsS2b1, 's2b1', expectedBranchLogs(expectedLogMap, 'stage2.s2b1', '[stage2] [s2b1] '))
+    checkBranchLogs(logsS2b2, 's2b2', expectedBranchLogs(expectedLogMap, 'stage2.s2b2', '[stage2] [s2b2] '))
+    checkBranchLogs(logsStage1, 'stage1', expectedBranchLogs(expectedLogMap, 'stage1', '[stage1] '))
+    checkBranchLogs(logsStage2, 'stage2', expectedBranchLogs(expectedLogMap, 'stage2', '[stage2] '))
+    checkBranchLogs(logsStage3, 'stage3', expectedBranchLogs(expectedLogMap, 'stage2.stage3', '[stage2] [stage3] '))
 
-    checkBranchLogs(extractMainLogs(logsNoBranchWithStages, begin, end), 'null', expectedLogMapWithStages.'null')
-    checkBranchLogs(logsS2b1WithStages, 's2b1', expectedBranchLogs(expectedLogMapWithStages, 'stage2.s2b1', '[stage2] [s2b1] '))
-    checkBranchLogs(logsS2b2WithStages, 's2b2', expectedBranchLogs(expectedLogMapWithStages, 'stage2.s2b2', '[stage2] [s2b2] '))
-    checkBranchLogs(logsStage1, 'stage1', expectedBranchLogs(expectedLogMapWithStages, 'stage1', '[stage1] '))
-    checkBranchLogs(logsStage2, 'stage2', expectedBranchLogs(expectedLogMapWithStages, 'stage2', '[stage2] '))
-    checkBranchLogs(logsStage3, 'stage3', expectedBranchLogs(expectedLogMapWithStages, 'stage2.stage3', '[stage2] [stage3] '))
+    checkBranchLogs(extractMainLogs(logsNoBranchWithoutStages, begin, end), 'null', expectedLogMapWithoutStages.'null')
+    checkBranchLogs(logsS2b1WithoutStages, 's2b1', expectedBranchLogs(expectedLogMapWithoutStages, 's2b1', '[s2b1] '))
+    checkBranchLogs(logsS2b2WithoutStages, 's2b2', expectedBranchLogs(expectedLogMapWithoutStages, 's2b2', '[s2b2] '))
+    checkBranchLogs(logsBranch4WithDuplicates, 'branch4', expectedBranchLogs(expectedLogMapWithDuplicates, 'branch4', '[branch4] [branch4] '))
+
+    checkBranchLogs(logsBranch1InBranch2, 'branch1', expectedBranchLogs(expectedLogMap, 'branch2.branch1', '[branch2] [branch1] '))
+    checkBranchLogs(logsBranch1InAny, 'branch1', expectedBranchLogs(expectedLogMap, 'branch2.branch1', '[branch2] [branch1] '))
 
     // check full logs
     print 'checking fullLog contain the same lines as each branch (different order)'
@@ -686,6 +741,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
             logsBranch21 +
             logsBranch22 +
             logsBranch3 +
+            logsBranch4 +
             logsInit +
             logsEmpty +
             logsEndl +
@@ -695,7 +751,10 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
             logsOne +
             logsTwo +
             logsS2b1 +
-            logsS2b2
+            logsS2b2 +
+            logsStage1 +
+            logsStage2 +
+            logsStage3
         )
     )
 
@@ -709,7 +768,8 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
             logsBranch2 +
             logsBranch21 +
             logsBranch22 +
-            logsBranch3
+            logsBranch3 +
+            logsBranch4
         )
     )
     print 'checking logsS2b1S2b2 contain the same lines as branches s2b1 and s2b2 (different order)'
@@ -730,6 +790,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
             logsBranch21 +
             logsBranch22 +
             logsBranch3 +
+            logsBranch4 +
             logsInit +
             logsEmpty +
             logsEndl +
@@ -739,7 +800,10 @@ def parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end) {
             logsOne +
             logsTwo +
             logsS2b1 +
-            logsS2b2
+            logsS2b2 +
+            logsStage1 +
+            logsStage2 +
+            logsStage3
         )
     )
 
@@ -820,7 +884,7 @@ def printUrls(check) {
             assert it.findAll{ it.stage }.findAll{ it.name == 'stage3' }.size() == 1
 
             assert it.findAll{ it.stage }.size() == 3
-            assert it.findAll{ it.name != null }.size() == 3 + 19, it.findAll{ it.name != null }.collect { it.name }
+            assert it.findAll{ it.name != null }.size() == 3 + 21, it.findAll{ it.name != null }.collect { it.name }
 
             // check nested steps and stages
             [ [ 'branch21', 'branch2' ], [ 'branch22', 'branch2' ], [ 's2b1', 'stage2' ], [ 's2b2', 'stage2' ], [ 'stage1', null ] ].each{ lit ->
@@ -843,6 +907,112 @@ def printUrls(check) {
                     }
                 }
             }
+
+            // test getBranches
+            def getBranches = logparser.getBranches()
+            def getBranchesWithDuplicates = logparser.getBranches([ mergeNestedDuplicates: false ])
+            def getBranchesWithoutStages = logparser.getBranches([ showStages: false ])
+            def getBranch21 = logparser.getBranches([ filter: [ 'branch21' ] ])
+            def getBranch1 = logparser.getBranches([ filter: [ 'branch1' ] ])
+            def getNestedBranch1 = logparser.getBranches([ filter: [ [ '.*', 'branch1' ] ] ])
+            def getBranch0And2 = logparser.getBranches([ filter: [ 'branch0', 'branch2' ] ])
+
+            assert getBranches == [
+                [null],
+                ['branch0'],
+                ['branch1'],
+                ['branch2'],
+                ['branch2', 'branch21'],
+                ['branch2', 'branch22'],
+                ['branch2', 'branch1'],
+                ['branch3'],
+                ['branch4'],
+                ['init'],
+                ['empty'],
+                ['endl'],
+                ['main'],
+                ['main', 'build'],
+                ['main', 'test'],
+                ['one'],
+                ['two'],
+                ['stage1'],
+                ['stage2'],
+                ['stage2', 'stage3'],
+                ['stage2', 's2b1'],
+                ['stage2', 's2b2'],
+                ['notimestamp'],
+                ['timestamp']
+            ], getBranches
+
+            assert getBranchesWithDuplicates == [
+                [null],
+                ['branch0'],
+                ['branch1'],
+                ['branch2'],
+                ['branch2', 'branch21'],
+                ['branch2', 'branch22'],
+                ['branch2', 'branch1'],
+                ['branch3'],
+                ['branch4'],
+                ['branch4', 'branch4'],
+                ['init'],
+                ['empty'],
+                ['endl'],
+                ['main'],
+                ['main', 'build'],
+                ['main', 'test'],
+                ['one'],
+                ['two'],
+                ['stage1'],
+                ['stage2'],
+                ['stage2', 'stage3'],
+                ['stage2', 's2b1'],
+                ['stage2', 's2b2'],
+                ['notimestamp'],
+                ['timestamp']
+            ], getBranchesWithDuplicates
+
+            assert getBranchesWithoutStages == [
+                [null],
+                ['branch0'],
+                ['branch1'],
+                ['branch2'],
+                ['branch2', 'branch21'],
+                ['branch2', 'branch22'],
+                ['branch2', 'branch1'],
+                ['branch3'],
+                ['branch4'],
+                ['init'],
+                ['empty'],
+                ['endl'],
+                ['main'],
+                ['main', 'build'],
+                ['main', 'test'],
+                ['one'],
+                ['two'],
+                ['s2b1'],
+                ['s2b2'],
+                ['notimestamp'],
+                ['timestamp']
+            ], getBranchesWithoutStages
+
+            assert getBranch21 == [
+                ['branch2', 'branch21']
+            ], getBranch21
+
+            assert getBranch1 == [
+                ['branch1'],
+                ['branch2', 'branch1']
+            ], getBranch1
+
+            assert getNestedBranch1 == [
+                ['branch2', 'branch1']
+            ], getNestedBranch1
+
+            assert getBranch0And2 == [
+                ['branch0'],
+                ['branch2']
+            ], getBranch0And2
         }
     }
 
@@ -890,12 +1060,13 @@ def testLogparser() {
 
     print begin
 
-    runBranches(expectedLogMap)
+    def expectedLogMapWithDuplicates = expectedLogMap
+    runBranches(expectedLogMap, expectedLogMapWithDuplicates)
     runSingleBranches(expectedLogMap)
     runBranchesWithManyLines(100, expectedLogMap)
     // deep copy
     def expectedLogMapWithStages = expectedLogMap.collectEntries{ k,v -> [ "$k".toString(), "$v".toString() ] }
-    runStagesAndBranches(expectedLogMap, expectedLogMapWithStages)
+    runStagesAndBranches(expectedLogMapWithStages, expectedLogMap)
 
     print end
 
@@ -903,7 +1074,7 @@ def testLogparser() {
     node(LABEL_LINUX) {
     }
 
-    parseLogs(expectedLogMap, expectedLogMapWithStages, begin, end)
+    parseLogs(expectedLogMapWithStages, expectedLogMap, expectedLogMapWithDuplicates, begin, end)
     printUrls(true)
 
     if (RUN_FULL_LOGPARSER_TEST || RUN_FULL_LOGPARSER_TEST_WITH_LOG_EDIT) {

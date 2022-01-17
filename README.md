@@ -12,8 +12,7 @@ Content:
   * it provides accessors to 'Blue Ocean' logs urls for parallel branches and stages
   
 Compatibility:
-  * tested with 2.190.1 & 2.303.2
-  * for earlier versions see version 1 (1.4.1 last tested with 2.73.3)
+  * tested with 2.190.1 & 2.319.2
 
 ## Table of contents
 - [Documentation](#documentation)
@@ -26,7 +25,7 @@ Compatibility:
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@2.0.1') _
+@Library('pipeline-logparser@3.0') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
 * _it may be different on your instance_
@@ -42,11 +41,11 @@ def mylog = logparser.getLogsWithBranchInfo()
 
 ### Detailed Documentation
 
-see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/2.0.1/vars/logparser.txt)  
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/3.0/vars/logparser.txt)  
 * _also available in $JOB_URL/pipeline-syntax/globals#logparser_
   * _visible only after the library has been imported once_
   * _requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity_
-
+ 
 this library provides functions:
 * to retrieve logs with branch info (as string or as run artifacts)
 * to filter logs from branches
@@ -94,7 +93,7 @@ functionalities:
     ```
     // get RunWrapper for current job last stable run
     // using https://github.com/gdemengin/pipeline-whitelist
-    @Library('pipeline-whitelist@2.0.1') _
+    @Library('pipeline-whitelist@3.0') _
     def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
 
     def blueTree = logparser.getBlueOceanUrls(otherBuild)
@@ -118,12 +117,23 @@ functionalities:
     [branch2] in branch2
     ```
 
-  * show stage name with option `showStages=true`
+  * hide stage name with option `showStages=false`
     ```
     stage ('stage1') {
       echo 'in stage 1'
     }
-    print logparser.getLogsWithBranchInfo(showStages: true)
+    print logparser.getLogsWithBranchInfo(showStages: false)
+    ```
+    result:
+    ```
+    in stage 1
+    ```
+    or show stage name (default)
+    ```
+    stage ('stage1') {
+      echo 'in stage 1'
+    }
+    print logparser.getLogsWithBranchInfo()
     ```
     result:
     ```
@@ -156,6 +166,29 @@ functionalities:
     ```
     [branch2] in branch2
     [branch21] in branch2.branch21
+    ```
+
+  * show duplicate parent branch name with option `mergeNestedDuplicates=false`
+    ```
+    parallel branch2: {
+      stage('branch2') { echo 'in stage branch2' }
+    }
+    print logparser.getLogsWithBranchInfo(mergeNestedDuplicates: false)
+    ```
+    result:
+    ```
+    [branch2] [branch2] in stage branch2
+    ```
+    or hide duplicates (default)
+    ```
+    parallel branch2: {
+      stage('branch2') { echo 'in stage branch2' }
+    }
+    print logparser.getLogsWithBranchInfo()
+    ```
+    result:
+    ```
+    [branch2] in stage branch2
     ```
 
   * show VT100 markups (hidden by default as they make raw log hard to read) with option `hideVT100=false`
@@ -298,11 +331,89 @@ functionalities:
     <nested branch [branch2]>
     ```
 
+  * filter branch using list of parent name(s)
+    ```
+    parallel branch1: {
+      echo 'in branch1'
+      parallel branch11: {
+        echo 'in branch1.branch11'
+        parallel branchA: {
+          echo 'in branch1.branch11.branchA'
+        }
+      }
+    }, branch2: {
+      echo 'in branch2'
+      parallel branch21: {
+        echo 'in branch2.branch21'
+        parallel branchA: {
+          echo 'in branch2.branch21.branchA'
+        }
+      }
+    }
+    print logparser.getLogsWithBranchInfo(filter: [ [ 'branch2', 'branch21', 'branchA' ] ])
+    ```
+    result:
+    ```
+    [branch2] [branch21] [branchA] in branch2.branch21.branchA
+    ```
+
+  * filter branch using the immediate parent name(s)
+    ```
+    parallel branch1: {
+      echo 'in branch1'
+      parallel branch11: {
+        echo 'in branch1.branch11'
+        parallel branchA: {
+          echo 'in branch1.branch11.branchA'
+        }
+      }
+    }, branch2: {
+      echo 'in branch2'
+      parallel branch21: {
+        echo 'in branch2.branch21'
+        parallel branchA: {
+          echo 'in branch2.branch21.branchA'
+        }
+      }
+    }
+    print logparser.getLogsWithBranchInfo(filter: [ [ 'branch21', 'branchA' ] ])
+    ```
+    result:
+    ```
+    [branch2] [branch21] [branchA] in branch2.branch21.branchA
+    ```
+
+  * filter branch using regular expression on parent name(s)
+    ```
+    parallel branch1: {
+      echo 'in branch1'
+      parallel branch11: {
+        echo 'in branch1.branch11'
+        parallel branchA: {
+          echo 'in branch1.branch11.branchA'
+        }
+      }
+    }, branch2: {
+      echo 'in branch2'
+      parallel branch21: {
+        echo 'in branch2.branch21'
+        parallel branchA: {
+          echo 'in branch2.branch21.branchA'
+        }
+      }
+    }
+    print logparser.getLogsWithBranchInfo(filter: [ [ 'branch2.*', '.*A' ] ])
+    ```
+    result:
+    ```
+    [branch2] [branch21] [branchA] in branch2.branch21.branchA
+    ```
+
 - get logs from another job/run
     ```
     // get RunWrapper for current job last stable run
     // using https://github.com/gdemengin/pipeline-whitelist
-    @Library('pipeline-whitelist@2.0.1') _
+    @Library('pipeline-whitelist@3.0') _
     def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
 
     def otherBuildLogs = logparser.getLogsWithBranchInfo([:], otherBuild)
@@ -314,7 +425,11 @@ functionalities:
     stage ('stage1') {
       parallel (
         branch1: { echo 'in branch1' },
-        branch2: { echo 'in branch2' }
+        branch2: {
+          node('linux') {
+            echo 'in branch2'
+          }
+        }
       )
     }
     def stepsTree = logparser.getPipelineStepsUrls()
@@ -322,71 +437,91 @@ functionalities:
     result:
     ```
     stepsTree = [
-      [
-        id:2, name:null, stage:false, parents:[], parent:null, children:[3, 15],
-        url:https://mydomain.com/job/myjob/28/execution/node/2/,
-        log:null
-      ],
-      [
-        id:3, name:null, stage:false, parents:[2], parent:2, children:[4, 14],
-        url:https://mydomain.com/job/myjob/28/execution/node/3/,
-        log:https://mydomain.com/job/myjob/28/execution/node/3/log
-      ],
-      [
-        id:4, name:stage1, stage:true, parents:[3, 2], parent:3, children:[5, 13],
-        url:https://mydomain.com/job/myjob/28/execution/node/4/,
-        log:null
-      ],
-      [
-        id:5, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[7, 8, 10, 12],
-        url:https://mydomain.com/job/myjob/28/execution/node/5/,
-        log:https://mydomain.com/job/myjob/28/execution/node/5/log
-      ],
-      [
-        id:7, name:branch1, stage:false, parents:[5, 4, 3, 2], parent:5, children:[9],
-        url:https://mydomain.com/job/myjob/28/execution/node/7/,
-        log:null
-      ],
-      [
-        id:9, name:null, stage:false, parents:[7, 5, 4, 3, 2], parent:7, children:[],
-        url:https://mydomain.com/job/myjob/28/execution/node/9/,
-        log:https://mydomain.com/job/myjob/28/execution/node/9/log
-      ],
-      [
-        id:8, name:branch2, stage:false, parents:[5, 4, 3, 2], parent:5, children:[11],
-        url:https://mydomain.com/job/myjob/28/execution/node/8/,
-        log:null
-      ],
-      [
-        id:11, name:null, stage:false, parents:[8, 5, 4, 3, 2], parent:8, children:[],
-        url:https://mydomain.com/job/myjob/28/execution/node/11/,
-        log:https://mydomain.com/job/myjob/28/execution/node/11/log
-      ],
-      [
-        id:10, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[],
-        url:https://mydomain.com/job/myjob/28/execution/node/10/,
-        log:null
-      ],
-      [
-        id:12, name:null, stage:false, parents:[5, 4, 3, 2], parent:5, children:[],
-        url:https://mydomain.com/job/myjob/28/execution/node/12/,
-        log:null
-      ],
-      [
-        id:13, name:null, stage:false, parents:[4, 3, 2], parent:4, children:[],
-        url:https://mydomain.com/job/myjob/28/execution/node/13/,
-        log:null
-      ],
-      [
-        id:14, name:null, stage:false, parents:[3, 2], parent:3, children:[],
-        url:https://mydomain.com/job/myjob/28/execution/node/14/,
-        log:null
-      ],
-      [
-        id:15, name:null, stage:false, parents:[2], parent:2, children:[],
-        url:https://mydomain.com/job/myjob/28/execution/node/15/,
-        log:null
-      ]
+      {
+        id=2, name=null, stage=false, parents=[], parent=null, children=[3, 19],
+        url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/2/,
+        log=null, label=null
+      },
+      {
+        id=3, name=null, stage=false, parents=[2], parent=2, children=[4, 18],
+        url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/3/,
+        log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/3/log, label=null
+      },
+      {
+        id=4, name=stage1, stage=true, parents=[3, 2], parent=3, children=[5, 17],
+        url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/4/,
+        log=null, label=null
+      },
+      {
+        id=5, name=null, stage=false, parents=[4, 3, 2], parent=4, children=[7, 8, 10, 16],
+        url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/5/,
+        log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/5/log, label=null
+      },
+      {
+        id=7, name=branch1, stage=false, parents=[5, 4, 3, 2], parent=5, children=[9],
+        url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/7/,
+        log=null, label=null
+      },
+      {
+         id=9, name=null, stage=false, parents=[7, 5, 4, 3, 2], parent=7, children=[],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/9/,
+         log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/9/log, label=null
+      },
+      {
+         id=8, name=branch2, stage=false, parents=[5, 4, 3, 2], parent=5, children=[11, 15],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/8/,
+         log=null, label=null
+      },
+      {
+         id=11, name=null, stage=false, parents=[8, 5, 4, 3, 2], parent=8, children=[12, 14],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/11/,
+         log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/11/log, label=linux
+      },
+      {
+         id=12, name=null, stage=false, parents=[11, 8, 5, 4, 3, 2], parent=11, children=[13],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/12/,
+         log=null, label=null
+      },
+      {
+         id=13, name=null, stage=false, parents=[12, 11, 8, 5, 4, 3, 2], parent=12, children=[],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/13/,
+         log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/13/log, label=null
+      },
+      {
+         id=14, name=null, stage=false, parents=[11, 8, 5, 4, 3, 2], parent=11, children=[],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/14/,
+         log=null, label=null
+      },
+      {
+         id=15, name=null, stage=false, parents=[8, 5, 4, 3, 2], parent=8, children=[],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/15/,
+         log=null, label=null
+      },
+      {
+         id=10, name=null, stage=false, parents=[5, 4, 3, 2], parent=5, children=[],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/10/,
+         log=null, label=null
+      },
+      {
+         id=16, name=null, stage=false, parents=[5, 4, 3, 2], parent=5, children=[],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/16/,
+         log=null, label=null
+      },
+      {
+         id=17, name=null, stage=false, parents=[4, 3, 2], parent=4, children=[],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/17/,
+         log=null, label=null
+      },
+      {
+         id=18, name=null, stage=false, parents=[3, 2], parent=3, children=[],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/18/,
+         log=null, label=null
+      },
+      {
+         id=19, name=null, stage=false, parents=[2], parent=2, children=[],
+         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/19/,
+         log=null, label=null
+      }
     ]
     ```
 
@@ -394,7 +529,7 @@ functionalities:
     ```
     // get RunWrapper for current job last stable run
     // using https://github.com/gdemengin/pipeline-whitelist
-    @Library('pipeline-whitelist@2.0.1') _
+    @Library('pipeline-whitelist@3.0') _
     def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
 
     def stepsTree = logparser.getPipelineStepsUrls(otherBuild)
@@ -418,6 +553,8 @@ Note:
 
 * logs of nested stages (stage inside stage) are not correctly handled in Blue Ocean (Blue Ocean limitation)
 
+* if 2 steps or stages have the sane name the logs will be combined in getLogsWithBranchInfo output (one may use filter option to filter on the parent's name in order to separate them)
+
 ## Change log <a name="changelog"></a>
 
 * 1.0 (09/2019)
@@ -439,7 +576,7 @@ Note:
   - handle logs from stages and add option showStages (default false) to show/filter them
 
 * 1.3 (10/2020)
-  - refactor to use objects available in rawbuild API (no more parsing of xml on disk)  
+  - refactor to use objects available in rawbuild API (no more parsing of xml on disk)
     fixing known parsing limitations (no more need to wait a few seconds before to parse logs)
   - new API to retrieve URLs to logs of branches (Pipeline Steps URLs)
   - ability to parse logs from another run/job
@@ -455,3 +592,11 @@ Note:
 
 * 2.0.1 (02/2021)
   - optimize workflow steps parsing (avoid slowdown with large, and/or massively parallel, workflows)
+
+* 3.0 (01/2022)
+  - getLogsWithBranchInfo() now shows stages by default (option showStages now true by default)
+  - add ability to remove duplicates branch name (when parent and child branch have the same name) in getLogsWithBranchInfo()
+    use option mergeNestedDuplicates=false to keep duplicates (default true)
+  - add ability to filter using parent(s) branch name(s) (option filter can be a list of branch names, with parents first)
+  - new API getBranches() to get all branch names (with parent names)
+  - add label in getPipelineStepsUrl for node/agent steps
