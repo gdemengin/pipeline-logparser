@@ -358,8 +358,12 @@ def extractMainLogs(mainLogs, begin, end) {
     //assert logs.count("\n${begin}\n").size() == 1
     //assert logs.count("\n${end}\n").size() == 1
     // use split to count
-    assert logs.split(/\n${begin}\n/).size() == 2, logs
-    assert logs.split(/\n${end}\n/).size() == 2, logs
+    def parts_begin = logs.split(/\n${begin}\n/).size()
+    def parts_end = logs.split(/\n${end}\n/).size()
+    if (parts_begin != 2 || parts_end != 2) {
+        archiveStringArtifact("debug_extractMainLogs.txt", logs)
+        assert false, "parts_begin=${parts_begin} != 2 or parts_end=${parts_end} != 2 in debug_extractMainLogs.txt split by \\n${begin}\\n \\n${end}\\n"
+    }
 
     return logs.replaceFirst(/(?s).*\n${begin}\n(.*\n)${end}\n.*/, /$1/)
 }
@@ -372,8 +376,12 @@ def stripNodeLogs(logs, n) {
     //assert logs.count("${begin}\n").size() == n
     //assert logs.count("\n${end}\n").size() == n
     // use split to count
-    assert logs.split(/${begin}\n/).size() == n + 1, logs
-    assert logs.split(/${end}\n/).size() == n + 1, logs
+    def parts_begin = logs.split(/${begin}\n/).size()
+    def parts_end = logs.split(/${end}\n/).size()
+    if (parts_begin != n + 1 || parts_end != n + 1) {
+        archiveStringArtifact("debug_stripNodeLogs.txt", logs)
+        assert false, "parts_begin=${parts_begin} != ${n} + 1 or parts_end=${parts_end} != ${n} + 1 in debug_stripNodeLogs.txt split by ${begin}\\n ${end}\\n"
+    }
 
     def regexSeparated = "(?s)\\[(one|two)\\] ${begin}((?!${begin}).)*?${end}\n"
     def regexImbricated = "(?s)\\[(one|two)\\] ${begin}.*${end}\n(?!${end})"
@@ -497,6 +505,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
     def logsBranchStar = logparser.getLogsWithBranchInfo(filter:[ 'branch.*' ])
     def logsS2b1S2b2 = logparser.getLogsWithBranchInfo(filter:[ 's2b1', 's2b2' ])
     def logsStar = logparser.getLogsWithBranchInfo(filter:[ '.*' ])
+    def logsStarWithoutStages = logparser.getLogsWithBranchInfo(filter:[ '.*' ], showStages:false)
     def logsFullStar = logparser.getLogsWithBranchInfo(filter:[ null, '.*' ])
 
     // stages
@@ -545,6 +554,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
     archiveStringArtifact("dump/logsBranchStar.txt", logsBranchStar)
     archiveStringArtifact("dump/logsS2b1S2b2.txt", logsS2b1S2b2)
     archiveStringArtifact("dump/logsStar.txt", logsStar)
+    archiveStringArtifact("dump/logsStarWithoutStages.txt", logsStarWithoutStages)
     archiveStringArtifact("dump/logsFullStar.txt", logsFullStar)
 
     archiveStringArtifact("dump/logsNoBranchWithoutStages.txt", logsNoBranchWithoutStages)
@@ -617,6 +627,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
         logsBranchStar = removeTimestamps(logsBranchStar)
         logsS2b1S2b2 = removeTimestamps(logsS2b1S2b2)
         logsStar = removeTimestamps(logsStar)
+        logsStarWithoutStages = removeTimestamps(logsStarWithoutStages)
         logsFullStar = removeTimestamps(logsFullStar)
 
         logsNoBranchWithoutStages = removeTimestamps(logsNoBranchWithoutStages)
@@ -662,6 +673,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
         archiveStringArtifact("dump/removeTimestamps/logsBranchStar.txt", logsBranchStar)
         archiveStringArtifact("dump/removeTimestamps/logsS2b1S2b2.txt", logsS2b1S2b2)
         archiveStringArtifact("dump/removeTimestamps/logsStar.txt", logsStar)
+        archiveStringArtifact("dump/removeTimestamps/logsStarWithoutStages.txt", logsStarWithoutStages)
         archiveStringArtifact("dump/removeTimestamps/logsFullStar.txt", logsFullStar)
 
         archiveStringArtifact("dump/removeTimestamps/logsNoBranchWithoutStages.txt", logsNoBranchWithoutStages)
@@ -685,11 +697,13 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
     logsOne = stripNodeLogs(logsOne, 1)
     logsTwo = stripNodeLogs(logsTwo, 1)
     logsStar = stripNodeLogs(logsStar, 2)
+    logsStarWithoutStages = stripNodeLogs(logsStarWithoutStages, 2)
     logsFullStar = stripNodeLogs(logsFullStar, 2)
 
     archiveStringArtifact("dump/stripNodeLogs/logsOne.txt", logsOne)
     archiveStringArtifact("dump/stripNodeLogs/logsTwo.txt", logsTwo)
     archiveStringArtifact("dump/stripNodeLogs/logsStar.txt", logsStar)
+    archiveStringArtifact("dump/stripNodeLogs/logsStarWithoutStages.txt", logsStarWithoutStages)
     archiveStringArtifact("dump/stripNodeLogs/logsFullStar.txt", logsFullStar)
 
 
@@ -780,9 +794,9 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
             logsS2b2
         )
     )
-    print 'checking logsStar contain the same lines as each branch (different order)'
+    print 'checking logsStarWithoutStages contain the same lines as each branch (different order)'
     unsortedCompare(
-        logsStar,
+        logsStarWithoutStages,
         removeFilters(
             logsBranch0 +
             logsBranch1 +
@@ -799,11 +813,8 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
             logsTest +
             logsOne +
             logsTwo +
-            logsS2b1 +
-            logsS2b2 +
-            logsStage1 +
-            logsStage2 +
-            logsStage3
+            logsS2b1WithoutStages +
+            logsS2b2WithoutStages
         )
     )
 
@@ -882,9 +893,9 @@ def printUrls(check) {
             assert it.findAll{ it.name == 'stage3' }.size() == 1
             assert it.findAll{ it.name == 'stage3' }.findAll{ it.stage }.size() == 1
             assert it.findAll{ it.stage }.findAll{ it.name == 'stage3' }.size() == 1
-
-            assert it.findAll{ it.stage }.size() == 3
-            assert it.findAll{ it.name != null }.size() == 3 + 21, it.findAll{ it.name != null }.collect { it.name }
+            def stagesBeforeLogparserTests = 0
+            assert it.findAll{ it.stage }.size() == stagesBeforeLogparserTests + 3, it.findAll{ it.stage }.collect { it.name }
+            assert it.findAll{ it.name != null }.size() == stagesBeforeLogparserTests + 3 + 21, it.findAll{ it.name != null }.collect { it.name }
 
             // check nested steps and stages
             [ [ 'branch21', 'branch2' ], [ 'branch22', 'branch2' ], [ 's2b1', 'stage2' ], [ 's2b2', 'stage2' ], [ 'stage1', null ] ].each{ lit ->

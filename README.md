@@ -12,7 +12,7 @@ Content:
   * it provides accessors to 'Blue Ocean' logs urls for parallel branches and stages
   
 Compatibility:
-  * tested with 2.190.1 & 2.319.2
+  * tested with 2.190.1 & 2.319.3
 
 ## Table of contents
 - [Documentation](#documentation)
