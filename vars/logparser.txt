@@ -80,7 +80,7 @@
                         <code><br>
                             &nbsp;&nbsp;// get RunWrapper for current job last stable run<br>
                             &nbsp;&nbsp;// using https://github.com/gdemengin/pipeline-whitelist<br>
-                            &nbsp;&nbsp;@Library('pipeline-whitelist@3.0') _<br>
+                            &nbsp;&nbsp;@Library('pipeline-whitelist@4.0') _<br>
                             &nbsp;&nbsp;def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))<br>
                             &nbsp;&nbsp;<br>
                             &nbsp;&nbsp;def blueTree = logparser.getBlueOceanUrls(otherBuild)<br>
@@ -468,7 +468,7 @@
                         <code><br>
                             &nbsp;&nbsp;// get RunWrapper for current job last stable run<br>
                             &nbsp;&nbsp;// using https://github.com/gdemengin/pipeline-whitelist<br>
-                            &nbsp;&nbsp;@Library('pipeline-whitelist@3.0') _<br>
+                            &nbsp;&nbsp;@Library('pipeline-whitelist@4.0') _<br>
                             &nbsp;&nbsp;def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))<br>
                             &nbsp;&nbsp;<br>
                             &nbsp;&nbsp;def otherBuildLogs = logparser.getLogsWithBranchInfo([:], otherBuild)<br>
@@ -511,6 +511,12 @@
                     <li>
                         <b><code>log</code></b> : url to the logs (null if no log)
                     </li>
+                    <li>
+                        <b><code>label</code></b> : label used for node/agent steps (null if no label used)
+                    </li>
+                    <li>
+                        <b><code>host</code></b> : hostname used for node/agent steps
+                    </li>
                 </ul>
                 examples<br>
                 <ul>
@@ -531,87 +537,87 @@
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=2, name=null, stage=false, parents=[], parent=null, children=[3, 19],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/2/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=3, name=null, stage=false, parents=[2], parent=2, children=[4, 18],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/3/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/3/log, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/3/log, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=4, name=stage1, stage=true, parents=[3, 2], parent=3, children=[5, 17],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/4/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=5, name=null, stage=false, parents=[4, 3, 2], parent=4, children=[7, 8, 10, 16],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/5/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/5/log, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/5/log, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=7, name=branch1, stage=false, parents=[5, 4, 3, 2], parent=5, children=[9],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/7/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=9, name=null, stage=false, parents=[7, 5, 4, 3, 2], parent=7, children=[],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/9/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/9/log, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/9/log, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=8, name=branch2, stage=false, parents=[5, 4, 3, 2], parent=5, children=[11, 15],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/8/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=11, name=null, stage=false, parents=[8, 5, 4, 3, 2], parent=8, children=[12, 14],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/11/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/11/log, label=linux<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/11/log, label=linux, host=linux-12345<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=12, name=null, stage=false, parents=[11, 8, 5, 4, 3, 2], parent=11, children=[13],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/12/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=13, name=null, stage=false, parents=[12, 11, 8, 5, 4, 3, 2], parent=12, children=[],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/13/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/13/log, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/13/log, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=14, name=null, stage=false, parents=[11, 8, 5, 4, 3, 2], parent=11, children=[],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/14/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=15, name=null, stage=false, parents=[8, 5, 4, 3, 2], parent=8, children=[],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/15/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=10, name=null, stage=false, parents=[5, 4, 3, 2], parent=5, children=[],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/10/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=16, name=null, stage=false, parents=[5, 4, 3, 2], parent=5, children=[],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/16/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=17, name=null, stage=false, parents=[4, 3, 2], parent=4, children=[],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/17/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=18, name=null, stage=false, parents=[3, 2], parent=3, children=[],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/18/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;},<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;{<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;id=19, name=null, stage=false, parents=[2], parent=2, children=[],<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/19/,<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log=null, label=null, host=null<br>
                             &nbsp;&nbsp;&nbsp;&nbsp;}<br>
                             &nbsp;&nbsp;]<br>
                         </code><br>
@@ -621,7 +627,7 @@
                         <code><br>
                             &nbsp;&nbsp;// get RunWrapper for current job last stable run<br>
                             &nbsp;&nbsp;// using https://github.com/gdemengin/pipeline-whitelist<br>
-                            &nbsp;&nbsp;@Library('pipeline-whitelist@3.0') _<br>
+                            &nbsp;&nbsp;@Library('pipeline-whitelist@4.0') _<br>
                             &nbsp;&nbsp;def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))<br>
                             &nbsp;&nbsp;<br>
                             &nbsp;&nbsp;def stepsTree = logparser.getPipelineStepsUrls(otherBuild)<br>

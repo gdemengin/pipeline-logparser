@@ -25,7 +25,7 @@ Compatibility:
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@3.0') _
+@Library('pipeline-logparser@3.1') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
 * _it may be different on your instance_
@@ -41,7 +41,7 @@ def mylog = logparser.getLogsWithBranchInfo()
 
 ### Detailed Documentation
 
-see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/3.0/vars/logparser.txt)  
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/3.1/vars/logparser.txt)  
 * _also available in $JOB_URL/pipeline-syntax/globals#logparser_
   * _visible only after the library has been imported once_
   * _requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity_
@@ -93,7 +93,7 @@ functionalities:
     ```
     // get RunWrapper for current job last stable run
     // using https://github.com/gdemengin/pipeline-whitelist
-    @Library('pipeline-whitelist@3.0') _
+    @Library('pipeline-whitelist@4.0') _
     def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
 
     def blueTree = logparser.getBlueOceanUrls(otherBuild)
@@ -413,7 +413,7 @@ functionalities:
     ```
     // get RunWrapper for current job last stable run
     // using https://github.com/gdemengin/pipeline-whitelist
-    @Library('pipeline-whitelist@3.0') _
+    @Library('pipeline-whitelist@4.0') _
     def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
 
     def otherBuildLogs = logparser.getLogsWithBranchInfo([:], otherBuild)
@@ -440,87 +440,87 @@ functionalities:
       {
         id=2, name=null, stage=false, parents=[], parent=null, children=[3, 19],
         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/2/,
-        log=null, label=null
+        log=null, label=null, host=null
       },
       {
         id=3, name=null, stage=false, parents=[2], parent=2, children=[4, 18],
         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/3/,
-        log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/3/log, label=null
+        log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/3/log, label=null, host=null
       },
       {
         id=4, name=stage1, stage=true, parents=[3, 2], parent=3, children=[5, 17],
         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/4/,
-        log=null, label=null
+        log=null, label=null, host=null
       },
       {
         id=5, name=null, stage=false, parents=[4, 3, 2], parent=4, children=[7, 8, 10, 16],
         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/5/,
-        log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/5/log, label=null
+        log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/5/log, label=null, host=null
       },
       {
         id=7, name=branch1, stage=false, parents=[5, 4, 3, 2], parent=5, children=[9],
         url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/7/,
-        log=null, label=null
+        log=null, label=null, host=null
       },
       {
          id=9, name=null, stage=false, parents=[7, 5, 4, 3, 2], parent=7, children=[],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/9/,
-         log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/9/log, label=null
+         log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/9/log, label=null, host=null
       },
       {
          id=8, name=branch2, stage=false, parents=[5, 4, 3, 2], parent=5, children=[11, 15],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/8/,
-         log=null, label=null
+         log=null, label=null, host=null
       },
       {
          id=11, name=null, stage=false, parents=[8, 5, 4, 3, 2], parent=8, children=[12, 14],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/11/,
-         log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/11/log, label=linux
+         log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/11/log, label=linux, host=linux-12345
       },
       {
          id=12, name=null, stage=false, parents=[11, 8, 5, 4, 3, 2], parent=11, children=[13],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/12/,
-         log=null, label=null
+         log=null, label=null, host=null
       },
       {
          id=13, name=null, stage=false, parents=[12, 11, 8, 5, 4, 3, 2], parent=12, children=[],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/13/,
-         log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/13/log, label=null
+         log=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/13/log, label=null, host=null
       },
       {
          id=14, name=null, stage=false, parents=[11, 8, 5, 4, 3, 2], parent=11, children=[],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/14/,
-         log=null, label=null
+         log=null, label=null, host=null
       },
       {
          id=15, name=null, stage=false, parents=[8, 5, 4, 3, 2], parent=8, children=[],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/15/,
-         log=null, label=null
+         log=null, label=null, host=null
       },
       {
          id=10, name=null, stage=false, parents=[5, 4, 3, 2], parent=5, children=[],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/10/,
-         log=null, label=null
+         log=null, label=null, host=null
       },
       {
          id=16, name=null, stage=false, parents=[5, 4, 3, 2], parent=5, children=[],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/16/,
-         log=null, label=null
+         log=null, label=null, host=null
       },
       {
          id=17, name=null, stage=false, parents=[4, 3, 2], parent=4, children=[],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/17/,
-         log=null, label=null
+         log=null, label=null, host=null
       },
       {
          id=18, name=null, stage=false, parents=[3, 2], parent=3, children=[],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/18/,
-         log=null, label=null
+         log=null, label=null, host=null
       },
       {
          id=19, name=null, stage=false, parents=[2], parent=2, children=[],
          url=http://ci.jenkins.internal:8080/job/testFolder/job/testNestedFolder/job/testPipeline/7/execution/node/19/,
-         log=null, label=null
+         log=null, label=null, host=null
       }
     ]
     ```
@@ -529,7 +529,7 @@ functionalities:
     ```
     // get RunWrapper for current job last stable run
     // using https://github.com/gdemengin/pipeline-whitelist
-    @Library('pipeline-whitelist@3.0') _
+    @Library('pipeline-whitelist@4.0') _
     def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
 
     def stepsTree = logparser.getPipelineStepsUrls(otherBuild)
@@ -600,3 +600,7 @@ Note:
   - add ability to filter using parent(s) branch name(s) (option filter can be a list of branch names, with parents first)
   - new API getBranches() to get all branch names (with parent names)
   - add label in getPipelineStepsUrl for node/agent steps
+
+* 3.1 (02/2022)
+  - fix parsing when no label is used in node/agent steps
+  - add host in getPipelineStepsUrl for node/agent steps
