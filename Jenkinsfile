@@ -28,7 +28,7 @@ RUN_MANYTHREAD_TIMING_TEST = params.MANYTHREAD_TIMING_TEST == true
 // ============================
 // = import logparser library =
 // ============================
-// @Library('pipeline-logparser@3.0') _
+// @Library('pipeline-logparser@3.1') _
 node(LABEL_LINUX) {
     checkout scm
     def rev=sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
@@ -1042,6 +1042,8 @@ def printUrls(check) {
         str += "\n"
         str += "${offset}- url = ${it.url}\n"
         if (it.log) { str += "${offset}- log = ${it.log}\n" }
+        if (it.label) { str += "${offset}- label = ${it.label}\n" }
+        if (it.host) { str += "${offset}- host = ${it.host}\n" }
     }
 
     str += '\n********************\n'
@@ -1081,8 +1083,14 @@ def testLogparser() {
 
     print end
 
-    // add VT100 markers
+    // add VT100 marker + test parsing of node step
+
+    // node with label
     node(LABEL_LINUX) {
+    }
+
+    // empty node
+    node {
     }
 
     parseLogs(expectedLogMapWithStages, expectedLogMap, expectedLogMapWithDuplicates, begin, end)

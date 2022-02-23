@@ -66,6 +66,7 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraph = null, _node = null, _br
     def branches = _branches.collect{ it }
     def stages = _stages.collect { it }
     def label = null
+    def host = null
 
     if (node == null || this.cachedTree[key].containsKey(node.id) == false || this.cachedTree[key][node.id].active) {
         // fill in branches and stages lists for children (root branch + named branches/stages only)
@@ -97,16 +98,16 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraph = null, _node = null, _br
                 }
             } else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.ExecutorStep$DescriptorImpl && node.displayName=='Allocate node : Start') {
                 def argAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.cps.actions.ArgumentsActionImpl }
-                assert argAction.size() == 1
-                if (argAction[0].unmodifiedArguments) {
+                assert argAction.size() == 1 || argAction.size() == 0
+                // record the label if any
+                if (argAction.size() == 1 && argAction[0].unmodifiedArguments) {
                     label=argAction[0].argumentsInternal.label
                 }
-                else {
-                    // the label was filtered: record the hostname then
-                    def wsAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.support.actions.WorkspaceActionImpl }
-                    assert wsAction.size() == 1
-                    label=wsAction[0].node
-                }
+
+                // record the hostname
+                def wsAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.support.actions.WorkspaceActionImpl }
+                assert wsAction.size() == 1
+                host=wsAction[0].node
             }
         }
 
@@ -132,7 +133,8 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraph = null, _node = null, _br
                 haslog: logaction != null,
                 displayFunctionName: node.displayFunctionName,
                 url: node.url,
-                label: label
+                label: label,
+                host: host
             ]
         } else {
             // node exist in cached tree but was active last time it was updated: refresh its children and status
@@ -255,7 +257,7 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
         if (it.haslog) {
             log = "${url}log"
         }
-        ret += [ [ id: it.id, name: it.name, stage: it.stage, parents: it.parents, parent: it.parent, children: it.children, url: url, log: log, label: it.label ] ]
+        ret += [ [ id: it.id, name: it.name, stage: it.stage, parents: it.parents, parent: it.parent, children: it.children, url: url, log: log, label: it.label, host: it.host ] ]
     }
 
     if (this.verbose) {
