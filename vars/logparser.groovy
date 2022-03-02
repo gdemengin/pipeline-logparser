@@ -50,7 +50,17 @@ org.jenkinsci.plugins.workflow.actions.LogAction _getLogAction(node) {
 }
 
 @NonCPS
-java.util.LinkedHashMap _getNodeTree(build, _flowGraph = null, _node = null, _branches=[], _stages=[]) {
+java.util.LinkedHashMap _getChildrenMap(_flowGraph) {
+    java.util.LinkedHashMap childrenMap = [:]
+    _flowGraph.nodes.each {
+        List parentNodeChildren = childrenMap.get(it.enclosingId, [])
+        parentNodeChildren.add(it)
+    }
+    return childrenMap
+}
+
+@NonCPS
+java.util.LinkedHashMap _getNodeTree(build, _flowGraph = null, _node = null, _branches=[], _stages=[], _childrenMap = null) {
     def key=build.getFullDisplayName()
     if (this.cachedTree.containsKey(key) == false) {
         this.cachedTree[key] = [:]
@@ -59,6 +69,10 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraph = null, _node = null, _br
     def flowGraph = _flowGraph
     if (flowGraph == null) {
         flowGraph = _getFlowGraphAction(build)
+    }
+    def childrenMap = _childrenMap
+    if (_childrenMap == null) {
+        childrenMap = _getChildrenMap(flowGraph)
     }
     def node = _node
     def name = null
@@ -115,7 +129,7 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraph = null, _node = null, _br
         // get active state first
         def active = node.isActive() == true
         // get children AFTER active state (avoid incomplete list if state was still active)
-        def children = flowGraph.nodes.findAll{ it.enclosingId == node.id }.sort{ Integer.parseInt("${it.id}") }
+        def children = childrenMap.getOrDefault(node.id, []).sort{ Integer.parseInt("${it.id}") }
         def logaction = _getLogAction(node)
 
         // add parent in tree first
@@ -144,7 +158,7 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraph = null, _node = null, _br
         }
         // then add children
         children.each{
-            _getNodeTree(build, flowGraph, it, branches, stages)
+            _getNodeTree(build, flowGraph, it, branches, stages, childrenMap)
         }
     }
     // else : node was already put in tree while inactive, nothing to update
