@@ -12,6 +12,12 @@ run_job() {
     /manage_jenkins.sh check_jobs_success "$1"
 }
 
+cd ${GITHUB_WORKSPACE}
+[ "${GITHUB_EVENT_NAME}" == "pull_request" ] && git checkout -b ${GITHUB_SHA}
+git status
+git show -q
+echo GITHUB_SHA=${GITHUB_SHA}
+
 cd /
 
 > stdout
