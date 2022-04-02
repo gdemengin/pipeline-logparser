@@ -6,7 +6,7 @@
       <retriever class="org.jenkinsci.plugins.workflow.libs.SCMSourceRetriever">
         <scm class="jenkins.plugins.git.GitSCMSource" plugin="git@4.4.1">
           <id>e5fafb6b-9224-4646-ad29-20f69699a92b</id>
-          <remote>file://${GITHUB_WORKSPACE}/.git</remote>
+          <remote>file://${GITHUB_WORKSPACE}/.tmp-test/.git</remote>
           <credentialsId></credentialsId>
           <traits>
             <jenkins.plugins.git.traits.BranchDiscoveryTrait/>

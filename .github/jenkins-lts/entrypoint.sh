@@ -3,7 +3,7 @@
 set -e
 
 # start jenkins, run job to test and wait for it to complete, then stop kenkins
-run_job() {
+function run_job() {
     timeout 300 /manage_jenkins.sh start
     sleep 10
     timeout 300 /manage_jenkins.sh wait_for_jobs "$1"
@@ -12,10 +12,37 @@ run_job() {
     /manage_jenkins.sh check_jobs_success "$1"
 }
 
-cd ${GITHUB_WORKSPACE}
-[ "${GITHUB_EVENT_NAME}" == "pull_request" ] && git checkout -b ${GITHUB_SHA}
-git status
-git show -q
+# using the current git tree as Global Pipeline Library may fail
+# if HEAD is detached (pull-request, tag, ...)
+# So clone current commit in a local repo with local branch
+# the test job shall use that branch
+function create_local_repo() {
+    local SRC=${GITHUB_WORKSPACE}/.git
+    local SHA=${GITHUB_SHA}
+    local DST=${GITHUB_WORKSPACE}/.tmp-test
+
+    rm -rf ${DST}
+    git clone file://${SRC} ${DST}
+    cd ${DST}
+    git status
+
+    # create dummy branch to be able to use this commit
+    git checkout -b ${SHA}
+
+    # show status and last commit
+    git status
+    git show -q
+}
+
+function clean() {
+    # cleanup temp filesi
+    rm -rf ${GITHUB_WORKSPACE}/.tmp-test
+
+    # sleep to capture logs in tail command
+    sleep 10
+}
+
+create_local_repo
 echo GITHUB_SHA=${GITHUB_SHA}
 
 cd /
@@ -28,12 +55,10 @@ JOBS="logparser"
 
 run_job "${JOBS}" > stdout 2<&1|| {
     return_code=$?
-    # sleep to capture logs in tail command
-    sleep 10
+    clean
     echo "run_jobs failed, exiting"
     exit ${return_code}
 }
 
-# sleep to capture logs in tail command
-sleep 10
+clean
 echo "Happy End!"
