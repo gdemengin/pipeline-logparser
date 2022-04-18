@@ -21,20 +21,6 @@ def cachedTree = [:]
 // * INTERNAL FUNCTIONS *
 // **********************
 @NonCPS
-org.jenkinsci.plugins.workflow.job.views.FlowGraphAction _getFlowGraphAction(build) {
-    def flowGraph = build.rawBuild.allActions.findAll { it.class == org.jenkinsci.plugins.workflow.job.views.FlowGraphAction }
-    assert flowGraph.size() == 1
-    return flowGraph[0]
-}
-
-@NonCPS
-org.jenkinsci.plugins.workflow.graph.FlowNode _getNode(flowGraph, id) {
-    def node = flowGraph.nodes.findAll{ it.id == id }
-    assert node.size() == 1
-    node = node[0]
-}
-
-@NonCPS
 org.jenkinsci.plugins.workflow.actions.LogAction _getLogAction(node) {
     def logaction = \
         node.actions.findAll {
@@ -49,116 +35,132 @@ org.jenkinsci.plugins.workflow.actions.LogAction _getLogAction(node) {
     return logaction[0]
 }
 
+// expose flowGraphAction as node id map
+// with list of children cached to speed-up
+// and active status to avoid inconsistencies with children list
 @NonCPS
-java.util.LinkedHashMap _getChildrenMap(_flowGraph) {
-    java.util.LinkedHashMap childrenMap = [:]
-    _flowGraph.nodes.each {
-        List parentNodeChildren = childrenMap.get(it.enclosingId, [])
-        parentNodeChildren.add(it)
+java.util.LinkedHashMap _getFlowGraphMap(build) {
+    def flowGraph = build.rawBuild.allActions.findAll { it.class == org.jenkinsci.plugins.workflow.job.views.FlowGraphAction }
+    assert flowGraph.size() == 1
+    flowGraph = flowGraph[0]
+
+    // init map with copy of active status
+    // to avoid incomplete list of children if state is changing from active to inactive
+    // (once inactive, nodes & their children are not updated if cachedTree is updated)
+    def flowGraphMap = flowGraph.nodes.collectEntries {
+        [
+            (it.id): [
+                node: it,
+                active: it.active == true,
+                children: []
+            ]
+        ]
     }
-    return childrenMap
+
+    // cache children to speed-up
+    // get children AFTER active state
+    def start = null
+    flowGraph.nodes.each {
+        if (it.enclosingId != null) {
+            flowGraphMap[it.enclosingId].children.add(it)
+            flowGraphMap[it.id] += _getNodeInfos(it)
+        }
+        else {
+            assert it.class == org.jenkinsci.plugins.workflow.graph.FlowStartNode
+            assert start == null
+            start = it.id
+            flowGraphMap[it.id].isBranch = true
+        }
+    }
+
+    return [start: start, map: flowGraphMap]
 }
 
 @NonCPS
-java.util.LinkedHashMap _getNodeTree(build, _flowGraph = null, _node = null, _branches=[], _stages=[], _childrenMap = null) {
+java.util.LinkedHashMap _getNodeInfos(node) {
+    def infos = [:]
+    if (node.class == org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode) {
+        if (node.descriptor instanceof org.jenkinsci.plugins.workflow.cps.steps.ParallelStep$DescriptorImpl) {
+            def labelAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.cps.steps.ParallelStepExecution$ParallelLabelAction }
+            assert labelAction.size() == 1 || labelAction.size() == 0
+            if (labelAction.size() == 1) {
+                infos += [ name: labelAction[0].threadName, isBranch: true ]
+            }
+        } else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.StageStep$DescriptorImpl) {
+            def labelAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.actions.LabelAction }
+            assert labelAction.size() == 1 || labelAction.size() == 0
+            if (labelAction.size() == 1) {
+                infos += [ name: labelAction[0].displayName, isStage: true, isBranch: true ]
+            }
+        } else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.ExecutorStep$DescriptorImpl && node.displayName=='Allocate node : Start') {
+            def argAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.cps.actions.ArgumentsActionImpl }
+            assert argAction.size() == 1 || argAction.size() == 0
+            // record the label if any
+            if (argAction.size() == 1 && argAction[0].unmodifiedArguments) {
+                infos += [ label: argAction[0].argumentsInternal.label ]
+            }
+
+            def wsAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.support.actions.WorkspaceActionImpl }
+            // hostname may be missing if host not yet allocated
+            assert wsAction.size() == 1 || wsAction.size() == 0
+            // record hostname if any
+            if (wsAction.size() == 1) {
+                infos += [ hostname: wsAction[0].node ]
+            }
+        }
+    }
+    return infos
+}
+
+@NonCPS
+java.util.LinkedHashMap _getNodeTree(build, _flowGraphMap = null, _node = null) {
     def key=build.getFullDisplayName()
     if (this.cachedTree.containsKey(key) == false) {
         this.cachedTree[key] = [:]
     }
 
-    def flowGraph = _flowGraph
-    if (flowGraph == null) {
-        flowGraph = _getFlowGraphAction(build)
+    def flowGraphMap = _flowGraphMap
+    if (flowGraphMap == null) {
+        flowGraphMap = _getFlowGraphMap(build)
     }
-    def childrenMap = _childrenMap
-    if (_childrenMap == null) {
-        childrenMap = _getChildrenMap(flowGraph)
+
+    if (flowGraphMap.map.size() == 0) {
+        // pipeline not yet started, or failed before start
+        assert _node == null
+        return [:]
     }
+
     def node = _node
-    def name = null
-    def stage = false
-    def branches = _branches.collect{ it }
-    def stages = _stages.collect { it }
-    def label = null
-    def host = null
+    if (node == null) {
+        node = flowGraphMap.map[flowGraphMap.start].node
+    }
 
-    if (node == null || this.cachedTree[key].containsKey(node.id) == false || this.cachedTree[key][node.id].active) {
-        // fill in branches and stages lists for children (root branch + named branches/stages only)
-        if (node == null) {
-            if (flowGraph.nodes.size() == 0) {
-                // pipeline not yet started, or failed before start
-                return [:]
-            }
-            def rootNode = flowGraph.nodes.findAll{ it.enclosingId == null && it.class == org.jenkinsci.plugins.workflow.graph.FlowStartNode }
-            assert rootNode.size() == 1
-            node = rootNode[0]
-            branches += [ node.id ]
-        } else if (node.class == org.jenkinsci.plugins.workflow.cps.nodes.StepStartNode) {
-            if (node.descriptor instanceof org.jenkinsci.plugins.workflow.cps.steps.ParallelStep$DescriptorImpl) {
-                def labelAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.cps.steps.ParallelStepExecution$ParallelLabelAction }
-                assert labelAction.size() == 1 || labelAction.size() == 0
-                if (labelAction.size() == 1) {
-                    name = labelAction[0].threadName
-                    branches.add(0, node.id)
-                }
-            } else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.StageStep$DescriptorImpl) {
-                def labelAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.actions.LabelAction }
-                assert labelAction.size() == 1 || labelAction.size() == 0
-                if (labelAction.size() == 1) {
-                    name = labelAction[0].displayName
-                    stage = true
-                    branches.add(0, node.id)
-                    stages.add(0, node.id)
-                }
-            } else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.ExecutorStep$DescriptorImpl && node.displayName=='Allocate node : Start') {
-                def argAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.cps.actions.ArgumentsActionImpl }
-                assert argAction.size() == 1 || argAction.size() == 0
-                // record the label if any
-                if (argAction.size() == 1 && argAction[0].unmodifiedArguments) {
-                    label=argAction[0].argumentsInternal.label
-                }
-
-                // record the hostname
-                def wsAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.support.actions.WorkspaceActionImpl }
-                assert wsAction.size() == 1
-                host=wsAction[0].node
-            }
-        }
-
-        // add node information in tree
-        // get active state first
-        def active = node.isActive() == true
-        // get children AFTER active state (avoid incomplete list if state was still active)
-        def children = childrenMap.getOrDefault(node.id, []).sort{ Integer.parseInt("${it.id}") }
-        def logaction = _getLogAction(node)
+    // add current node to cache if not already there
+    // or update it, if it was still active in cache (and possibly incomplete)
+    if (this.cachedTree[key].containsKey(node.id) == false || this.cachedTree[key][node.id].active) {
+        def children = flowGraphMap.map[node.id].children.sort{ Integer.parseInt("${it.id}") }
 
         // add parent in tree first
-        if (this.cachedTree[key].containsKey(node.id) == false) {
-            this.cachedTree[key][node.id] = [ \
-                id: node.id,
-                name: name,
-                stage: stage,
-                parents: node.allEnclosingIds,
-                parent: node.enclosingId,
-                children: children.collect{ it.id },
-                branches: _branches,
-                stages: _stages,
-                active: active,
-                haslog: logaction != null,
-                displayFunctionName: node.displayFunctionName,
-                url: node.url,
-                label: label,
-                host: host
-            ]
-        } else {
-            // node exist in cached tree but was active last time it was updated: refresh its children and status
-            this.cachedTree[key][node.id].active = active
-            this.cachedTree[key][node.id].children = children.collect{ it.id }
-            this.cachedTree[key][node.id].haslog = logaction != null
-        }
+        this.cachedTree[key][node.id] = [ \
+            id: node.id,
+            name: flowGraphMap.map[node.id].name,
+            stage: flowGraphMap.map[node.id].isStage == true,
+            parents: node.allEnclosingIds,
+            parent: node.enclosingId,
+            children: children.collect{ it.id },
+            branches: node.allEnclosingIds.findAll{ flowGraphMap.map[it].isBranch },
+            stages: node.allEnclosingIds.findAll{ flowGraphMap.map[it].isStage },
+            active: flowGraphMap.map[node.id].active == true,
+            haslog: _getLogAction(node) != null,
+            displayFunctionName: node.displayFunctionName,
+            url: node.url,
+            label: flowGraphMap.map[node.id].label,
+            host: flowGraphMap.map[node.id].hostname
+        ]
+
         // then add children
         children.each{
-            _getNodeTree(build, flowGraph, it, branches, stages, childrenMap)
+            _getNodeTree(build, flowGraphMap, it)
         }
     }
     // else : node was already put in tree while inactive, nothing to update
@@ -349,8 +351,8 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
     }
     */
 
-    def flowGraph = _getFlowGraphAction(build)
-    def tree = _getNodeTree(build, flowGraph)
+    def flowGraphMap = _getFlowGraphMap(build)
+    def tree = _getNodeTree(build, flowGraphMap)
 
     if (this.verbose) {
         print "tree=${tree}"
@@ -380,7 +382,7 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
             }
 
             if (it.haslog) {
-                def node = _getNode(flowGraph, it.id)
+                def node = flowGraphMap.map[it.id].node
                 def logaction = _getLogAction(node)
                 assert logaction != null
 
@@ -441,8 +443,7 @@ java.util.ArrayList getBranches(java.util.LinkedHashMap options = [:], build = c
     // 1/ parse options
     def opt = _parseOptions(options)
 
-    def flowGraph = _getFlowGraphAction(build)
-    def tree = _getNodeTree(build, flowGraph)
+    def tree = _getNodeTree(build)
 
     if (this.verbose) {
         print "tree=${tree}"
