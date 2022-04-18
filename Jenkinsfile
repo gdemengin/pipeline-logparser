@@ -1147,11 +1147,32 @@ def testManyThreads(nbthread, nbloop, nbsubloop) {
     }
 }
 
+// if more threads than executor version 3.1.1 fails
+def testThreadsWithNodes(label, nbthread) {
+    torun = [:]
+    nbthread.times {
+        torun["${it}"] = {
+            node(label) {
+                logparser.getLogsWithBranchInfo([ filter : ["${it}"] ])
+            }
+        }
+    }
+    stage("test ${nbthread} threads with node()") {
+        timestamps {
+            parallel torun
+        }
+    }
+}
+
 // ===============
 // = run tests   =
 // ===============
 
 testLogparser()
+// test with less nodes as executor
+testThreadsWithNodes(LABEL_LINUX, 2)
+// same with more than executors available
+testThreadsWithNodes(LABEL_LINUX, 20)
 if (RUN_MANYTHREAD_TIMING_TEST) {
     testManyThreads(50,20,500)
 }
