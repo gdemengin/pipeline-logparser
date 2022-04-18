@@ -101,9 +101,12 @@ java.util.LinkedHashMap _getNodeInfos(node) {
             }
 
             def wsAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.support.actions.WorkspaceActionImpl }
-            assert wsAction.size() == 1
-            // record hostname
-            infos += [ hostname: wsAction[0].node ]
+            // hostname may be missing if host not yet allocated
+            assert wsAction.size() == 1 || wsAction.size() == 0
+            // record hostname if any
+            if (wsAction.size() == 1) {
+                infos += [ hostname: wsAction[0].node ]
+            }
         }
     }
     return infos
