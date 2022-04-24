@@ -111,7 +111,6 @@ junit
 kubernetes
 kubernetes-client-api
 kubernetes-credentials
-kubernetes-credentials-provider
 kubernetes-pipeline-devops-steps
 ldap
 lockable-resources
