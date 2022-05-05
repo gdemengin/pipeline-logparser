@@ -645,3 +645,6 @@ Note:
 
 * 3.1.3 (06/2022)
   - fix parsing of completed jobs #16
+
+* 3.X (??/2022)
+  - allow parsing of corrupted flowGraph (nodes other than start node without parents)
