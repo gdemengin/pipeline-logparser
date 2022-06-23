@@ -289,10 +289,38 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
 @NonCPS
 java.util.LinkedHashMap _parseOptions(java.util.LinkedHashMap options = [:])
 {
-    def defaultOptions = [ filter: [], showParents: true, showStages: true, markNestedFiltered: true, hidePipeline: true, hideVT100: true, mergeNestedDuplicates: true ]
+    def defaultOptions = [
+        filter: [],
+        showParents: true,
+        showStages: true,
+        markNestedFiltered: true,
+        hidePipeline: true,
+        hideVT100: true,
+        mergeNestedDuplicates: true,
+        writeToFile: false,
+        filePath: null
+    ]
     // merge 2 maps with priority to options values
     def new_options = defaultOptions.plus(options)
-    new_options.keySet().each{ assert it in ['filter', 'showParents', 'showStages', 'markNestedFiltered', 'mergeNestedDuplicates', 'hidePipeline', 'hideVT100'], "invalid option $it" }
+    new_options.keySet().each{
+        assert it in [
+            'filter',
+            'showParents',
+            'showStages',
+            'markNestedFiltered',
+            'mergeNestedDuplicates',
+            'hidePipeline',
+            'hideVT100',
+            'writeToFile',
+            'filePath'
+        ], "invalid option $it"
+    }
+
+    if (new_options.writeToFile){
+        assert new_options.filePath != null : "writeToFile is set to True so filePath needs to be specified"
+        assert new_options.filePath instanceof hudson.FilePath
+    }
+
     return new_options
 }
 
@@ -311,6 +339,42 @@ Boolean _keepBranches(java.util.ArrayList branches, java.util.ArrayList filter) 
             }
         } > 0)
 }
+
+@NonCPS
+void _appendToOutput(def output, String stringToAppend){
+    if (output instanceof String ) {
+        output += stringToAppend
+    }
+
+    if (output instanceof java.io.OutputStream) {
+        org.apache.commons.io.IOUtils.write(
+            stringToAppend,
+            output,
+            'UTF-8'
+        )
+    }
+}
+
+@NonCPS
+void _appendLogListToOutput(def output, List logList, boolean appendExtraLineBreak = false, int bufferSize=500){
+
+    List subList = []
+    logList.each{ item ->
+        if(subList.size() < bufferSize){
+            subList.add(item)
+        }
+
+        if(subList.size() >= bufferSize  ||  item == logList.last()){
+            _appendToOutput(output, subList.join('\n'))
+            subList = []
+        }
+    }
+
+    if(appendExtraLineBreak){
+        _appendToOutput(output, '\n')
+    }
+}
+
 
 // return log file with BranchInformation
 // - return logs only for one branch if filterBranchName not null (default null)
@@ -333,10 +397,22 @@ Boolean _keepBranches(java.util.ArrayList branches, java.util.ArrayList filter) 
 String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = currentBuild)
 {
     // return value
-    def output = ''
+    def output
 
     // 1/ parse options
     def opt = _parseOptions(options)
+
+    if(opt.writeToFile){
+        output = opt.filePath.write()
+        assert output instanceof java.io.OutputStream
+
+        if (this.verbose) {
+            print "filePath=${opt.filePath}"
+        }
+
+    } else {
+        output = ''
+    }
 
     /* TODO: option to show logs before start of pipeline
     if (opt.filter.size() == 0 || null in opt.filter) {
@@ -344,9 +420,9 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
         def s = new StreamTaskListener(b, Charset.forName('UTF-8'))
         build.rawBuild.allActions.findAll{ it.class == hudson.model.CauseAction }.each{ it.causes.each { it.print(s) } }
         if (opt.hideVT100) {
-            output += b.toString().replaceAll(/\x1B\[8m.*?\x1B\[0m/, '')
+            _appendToOutput(output, b.toString().replaceAll(/\x1B\[8m.*?\x1B\[0m/, ''))
         } else {
-            output += b.toString()
+            _appendToOutput(output, b.toString())
         }
     }
     */
@@ -378,7 +454,7 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
             }
 
             if (opt.hidePipeline == false) {
-                output += "[Pipeline] ${prefix}${it.displayFunctionName}\n"
+                _appendToOutput(output, "[Pipeline] ${prefix}${it.displayFunctionName}\n")
             }
 
             if (it.haslog) {
@@ -398,12 +474,12 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
                     def logList = str.split('\n', -1).collect{ "${prefix}${it}" }
                     if (str.endsWith('\n')) {
                         logList.remove(logList.size() - 1)
-                        output += logList.join('\n') + '\n'
+                        _appendLogListToOutput(output, logList, true)
                     } else if (str.size() > 0) {
-                        output += logList.join('\n')
+                        _appendLogListToOutput(output, logList)
                     }
                 } else {
-                     output += b.toString()
+                    _appendToOutput(output, b.toString())
                 }
             }
         } else if (opt.markNestedFiltered && it.name != null && it.parents.findAll { keep."${it}" }.size() > 0) {
@@ -423,12 +499,12 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
                 } else {
                     prefix = "[${branches[0]}]"
                 }
-                output += "<nested branch ${prefix}>\n"
+                _appendToOutput(output, "<nested branch ${prefix}>\n")
             }
         }
         // else none of the parent branches is kept, skip this one entirely
     }
-    return output
+    return output instanceof String ? output : "Logs were written to ${opt.filePath}"
 }
 
 // get list of branches and parents
