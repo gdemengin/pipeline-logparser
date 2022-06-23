@@ -12,7 +12,7 @@ check_fresh_jenkins() {
 
 start_jenkins() {
     echo "$(date) starting jenkins instance"
-    export JAVA_OPTS="-Xmx1024m -Djenkins.install.runSetupWizard=false"
+    export JAVA_OPTS="-Xmx1024m -Djenkins.install.runSetupWizard=false -Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true"
     export PLUGINS_FORCE_UPGRADE=true
     export TRY_UPGRADE_IF_NO_MARKER=true
 
