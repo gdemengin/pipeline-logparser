@@ -1211,12 +1211,24 @@ def testThreadsWithNodes(label, nbthread) {
     }
 }
 
+def testWriteToFile() {
+    node(LABEL_TEST_AGENT) {
+        def expected = logparser.getLogsWithBranchInfo()
+
+        logparser.writeLogsWithBranchInfo(env.NODE_NAME, "${pwd()}/logs_write.txt")
+        assert readFile('logs_write.txt') == expected
+    }
+}
+
+
+
 // ===============
 // = run tests   =
 // ===============
 
 testLogparser()
 testCompletedJobs()
+testWriteToFile()
 // test with less nodes than executor
 testThreadsWithNodes(LABEL_TEST_AGENT, 2)
 // same with more than executors available

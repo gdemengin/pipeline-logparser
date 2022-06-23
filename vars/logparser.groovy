@@ -3,6 +3,8 @@
 // ===================================
 // a library to parse and filter logs
 
+import org.apache.commons.io.IOUtils
+
 // *******************
 // * SCRIPT VARIABLE *
 // *******************
@@ -289,12 +291,31 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
 //***************************
 
 @NonCPS
-java.util.LinkedHashMap _parseOptions(java.util.LinkedHashMap options = [:])
+java.util.LinkedHashMap _parseOptions(java.util.LinkedHashMap options)
 {
-    def defaultOptions = [ filter: [], showParents: true, showStages: true, markNestedFiltered: true, hidePipeline: true, hideVT100: true, mergeNestedDuplicates: true ]
+    def defaultOptions = [
+        filter: [],
+        showParents: true,
+        showStages: true,
+        markNestedFiltered: true,
+        hidePipeline: true,
+        hideVT100: true,
+        mergeNestedDuplicates: true
+    ]
     // merge 2 maps with priority to options values
     def new_options = defaultOptions.plus(options)
-    new_options.keySet().each{ assert it in ['filter', 'showParents', 'showStages', 'markNestedFiltered', 'mergeNestedDuplicates', 'hidePipeline', 'hideVT100'], "invalid option $it" }
+    new_options.keySet().each{
+        assert it in [
+            'filter',
+            'showParents',
+            'showStages',
+            'markNestedFiltered',
+            'mergeNestedDuplicates',
+            'hidePipeline',
+            'hideVT100'
+        ], "invalid option $it"
+    }
+
     return new_options
 }
 
@@ -314,29 +335,35 @@ Boolean _keepBranches(java.util.ArrayList branches, java.util.ArrayList filter) 
         } > 0)
 }
 
-// return log file with BranchInformation
-// - return logs only for one branch if filterBranchName not null (default null)
-// - with parent information for nested branches if options.showParents is true (default)
-//   example:
-//      if true: "[branch2] [branch21] log from branch21 nested in branch2"
-//      if false "[branch21] log from branch21 nested in branch2"
-// - with a marker showing nested branches if options.markNestedFiltered is true (default) and if filterBranchName is not null
-//   example:
-//      "<nested branch [branch2] [branch21]"
-// - without VT100 markups if options.hideVT100 is true (default)
-// - without Pipeline technical logs if options.hidePipeline is true (default)
-// - with stage information if showStage is true (default true)
-// - with duplicate branch names removed if mergeNestedDuplicates is true (default true)
-//
-// cf https://stackoverflow.com/questions/38304403/jenkins-pipeline-how-to-get-logs-from-parallel-builds
-// cf https://stackoverflow.com/a/57351397
-// (workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304)
 @NonCPS
-String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = currentBuild)
-{
-    // return value
-    def output = ''
+void _appendToOutput(java.io.OutputStream output, String logs, String prefix = '') {
+    if (logs.size() == 0) {
+        return
+    }
 
+    if (prefix != '') {
+        // split(regex,limit) with negative limit in case of trailing \n\n
+        // (0 or positive limit would strip trailing \n and/or limit the list size)
+        def logList = logs.split('\n', -1).collect{ "${prefix}${it}" }
+        if (logs.endsWith('\n')) {
+            // no prefix for trailing \n
+            logList.remove(logList.size() -1)
+            IOUtils.write(logList.join('\n') + '\n', output, 'UTF-8')
+        }
+        else {
+            IOUtils.write(logList.join('\n'), output, 'UTF-8')
+        }
+    } else {
+        IOUtils.write(logs, output, 'UTF-8')
+    }
+}
+
+@NonCPS
+void _getLogsWithBranchInfo(
+    java.io.OutputStream output,
+    java.util.LinkedHashMap options,
+    build
+) {
     // 1/ parse options
     def opt = _parseOptions(options)
 
@@ -346,9 +373,9 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
         def s = new StreamTaskListener(b, Charset.forName('UTF-8'))
         build.rawBuild.allActions.findAll{ it.class == hudson.model.CauseAction }.each{ it.causes.each { it.print(s) } }
         if (opt.hideVT100) {
-            output += b.toString().replaceAll(/\x1B\[8m.*?\x1B\[0m/, '')
+            _appendToOutput(output, b.toString().replaceAll(/\x1B\[8m.*?\x1B\[0m/, ''))
         } else {
-            output += b.toString()
+            _appendToOutput(output, b.toString())
         }
     }
     */
@@ -380,7 +407,7 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
             }
 
             if (opt.hidePipeline == false) {
-                output += "[Pipeline] ${prefix}${it.displayFunctionName}\n"
+                _appendToOutput(output, "[Pipeline] ${prefix}${it.displayFunctionName}\n")
             }
 
             if (it.haslog) {
@@ -394,19 +421,7 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
                 } else {
                     logaction.logText.writeRawLogTo(0, b)
                 }
-                if (prefix != '') {
-                    def str = b.toString()
-                    // split(regex,limit) with negative limit in case of trailing \n\n (0 or positive limit would strip trailing \n and limit the list size)
-                    def logList = str.split('\n', -1).collect{ "${prefix}${it}" }
-                    if (str.endsWith('\n')) {
-                        logList.remove(logList.size() - 1)
-                        output += logList.join('\n') + '\n'
-                    } else if (str.size() > 0) {
-                        output += logList.join('\n')
-                    }
-                } else {
-                     output += b.toString()
-                }
+                _appendToOutput(output, b.toString(), prefix)
             }
         } else if (opt.markNestedFiltered && it.name != null && it.parents.findAll { keep."${it}" }.size() > 0) {
             def showNestedMarker = true
@@ -425,13 +440,81 @@ String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = curr
                 } else {
                     prefix = "[${branches[0]}]"
                 }
-                output += "<nested branch ${prefix}>\n"
+                _appendToOutput(output, "<nested branch ${prefix}>\n")
             }
         }
         // else none of the parent branches is kept, skip this one entirely
     }
+}
+
+// return log file with BranchInformation
+// - return logs only for one branch if filterBranchName not null (default null)
+// - with parent information for nested branches if options.showParents is true (default)
+//   example:
+//      if true: "[branch2] [branch21] log from branch21 nested in branch2"
+//      if false "[branch21] log from branch21 nested in branch2"
+// - with a marker showing nested branches if options.markNestedFiltered is true (default) and if filterBranchName is not null
+//   example:
+//      "<nested branch [branch2] [branch21]"
+// - without VT100 markups if options.hideVT100 is true (default)
+// - without Pipeline technical logs if options.hidePipeline is true (default)
+// - with stage information if showStage is true (default true)
+// - with duplicate branch names removed if mergeNestedDuplicates is true (default true)
+//
+// cf https://stackoverflow.com/questions/38304403/jenkins-pipeline-how-to-get-logs-from-parallel-builds
+// cf https://stackoverflow.com/a/57351397
+// (workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304)
+@NonCPS
+String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], build = currentBuild)
+{
+    def output = new ByteArrayOutputStream()
+    _getLogsWithBranchInfo(output, options, build)
     return output
 }
+
+// same as getLogsWithBranchInfo but write directly to artifact of current run
+@NonCPS
+void archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])
+{
+    def jobRoot = currentBuild.rawBuild.getRootDir()
+    def file = new File("${jobRoot}/archive/${name}")
+
+    if (this.verbose) {
+        print "logparser: archiving ${file.path}"
+    }
+
+    if (! file.parentFile.exists()){
+        file.parentFile.mkdirs();
+    }
+    writeLogsWithBranchInfo(new hudson.FilePath(file), options)
+}
+
+// same as getLogsWithBranchInfo but write directly to file
+@NonCPS
+void writeLogsWithBranchInfo(hudson.FilePath filePath, java.util.LinkedHashMap options = [:], build = currentBuild)
+{
+    def output = filePath.write()
+    assert output instanceof java.io.OutputStream
+    _getLogsWithBranchInfo(output, options, build)
+}
+
+// same but creating the filePath object
+// keep it CPS to access jenkins instance
+void writeLogsWithBranchInfo(String node, String path, java.util.LinkedHashMap options = [:], build = currentBuild)
+{
+    def computer = Jenkins.instance.getComputer(node)
+    if (computer == null) {
+        // check if master is under this label
+        def is_master = jenkins.model.Jenkins.instance.getLabel(node).nodes.findAll{ it.class == hudson.model.Hudson }.size() > 0
+        if (is_master) {
+            // master node computer is found under parenthesis ... no idea why
+            computer = Jenkins.instance.getComputer("(${node})")
+        }
+    }
+    assert computer != null, "node '${node}' not found"
+    writeLogsWithBranchInfo(new hudson.FilePath(computer.channel, path), options, build)
+}
+
 
 // get list of branches and parents
 // (list of list one item per branch, parents first, null if no branch name)
@@ -472,10 +555,6 @@ java.util.ArrayList getBranches(java.util.LinkedHashMap options = [:], build = c
     return result
 }
 
-//*************
-//* ARCHIVING *
-//*************
-
 // archive buffer directly on the master (no need to instantiate a node like ArchiveArtifact)
 // cf https://github.com/gdemengin/pipeline-whitelist
 @NonCPS
@@ -492,17 +571,5 @@ void archiveArtifactBuffer(String name, String buffer) {
     }
     file.write(buffer)
 }
-
-// archive logs with [<branch>] prefix on lines belonging to <branch>
-// and filter by branch if filterBranchName not null
-// cf https://stackoverflow.com/questions/38304403/jenkins-pipeline-how-to-get-logs-from-parallel-builds
-// cf https://stackoverflow.com/a/57351397
-// (workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304)
-@NonCPS
-void archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])
-{
-    archiveArtifactBuffer(name, getLogsWithBranchInfo(options))
-}
-
 
 return this
