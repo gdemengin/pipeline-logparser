@@ -65,7 +65,9 @@ java.util.LinkedHashMap _getFlowGraphMap(build) {
             flowGraphMap[it.enclosingId].children.add(it)
             flowGraphMap[it.id] += _getNodeInfos(it)
         }
-        else {
+        else if (it.class != org.jenkinsci.plugins.workflow.graph.FlowEndNode) {
+            // https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/graph/FlowNode.html#getEnclosingId--
+            // only FlowStartNode & FlowEndNode should have null enclosingId
             assert it.class == org.jenkinsci.plugins.workflow.graph.FlowStartNode
             assert start == null
             start = it.id

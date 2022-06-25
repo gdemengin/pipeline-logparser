@@ -1063,6 +1063,33 @@ def printUrls(check) {
     print str
 }
 
+def testCompletedJobs() {
+    def pipeline = build 'sample-pipeline'
+    assert pipeline.result == 'SUCCESS'
+    def log = logparser.getLogsWithBranchInfo([:], pipeline)
+    print log
+    assert log.trim() == '[stage1] dummy pipeline for logparser tests', "log='${log.trim()}'"
+    def branches = logparser.getBranches([:], pipeline)
+    assert branches == [ [null], ['stage1'] ], branches
+    def bou = logparser.getBlueOceanUrls(pipeline)
+    print bou
+    psu = logparser.getPipelineStepsUrls(pipeline)
+    print psu
+
+    def freestyle = build 'sample-freestyle'
+    assert freestyle.result == 'SUCCESS'
+    def caught=false
+    try {
+        logparser = logparser.getLogsWithBranchInfo([:], freestyle)
+    }
+    catch (Error err) {
+       caught=true
+       assert err.class == org.codehaus.groovy.runtime.powerassert.PowerAssertionError, err.class
+       assert "${err}".contains('assert flowGraph.size() == 1'), "${err}"
+    }
+    assert caught == true
+}
+
 def testLogparser() {
     // expected map of logs
     def expectedLogMap = [ 'null': '' ]
@@ -1169,7 +1196,8 @@ def testThreadsWithNodes(label, nbthread) {
 // ===============
 
 testLogparser()
-// test with less nodes as executor
+testCompletedJobs()
+// test with less nodes than executor
 testThreadsWithNodes(LABEL_LINUX, 2)
 // same with more than executors available
 testThreadsWithNodes(LABEL_LINUX, 20)
