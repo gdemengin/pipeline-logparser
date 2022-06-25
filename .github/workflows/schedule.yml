@@ -1,6 +1,7 @@
 on:
-  push:
-  pull_request:
+  schedule:
+    # once a week to check with latest version of plugins
+    - cron:  '0 19 * * 1'
   workflow_dispatch:
 
 jobs:
@@ -9,5 +10,7 @@ jobs:
     name: test on jenkins-lts
     steps:
       - uses: actions/checkout@v2
+        with:
+           ref: test
       - name: test jenkins-lts
         uses: ./.github/jenkins-lts/

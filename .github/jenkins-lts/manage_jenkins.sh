@@ -16,6 +16,9 @@ start_jenkins() {
     export PLUGINS_FORCE_UPGRADE=true
     export TRY_UPGRADE_IF_NO_MARKER=true
 
+    rm -rf ${GITHUB_WORKSPACE}/.version
+    mkdir -p ${GITHUB_WORKSPACE}/.version
+
     /usr/local/bin/jenkins.sh >> /jenkins.log 2>&1 &
 }
 

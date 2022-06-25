@@ -18,6 +18,7 @@ Compatibility:
 - [Documentation](#documentation)
 - [Installation](#installation)
 - [Know Limitations](#limitations)
+- [How to test](#tests)
 - [Change log](#changelog)
 
 ## Documentation <a name="documentation"></a>
@@ -554,6 +555,22 @@ Note:
 * logs of nested stages (stage inside stage) are not correctly handled in Blue Ocean (Blue Ocean limitation)
 
 * if 2 steps or stages have the sane name the logs will be combined in getLogsWithBranchInfo output (one may use filter option to filter on the parent's name in order to separate them)
+
+## How to test <a name="tests"></a>
+
+* to test on jenkins lts (start jenkins, create local Global Pipeline Library from current repo, run Jenkinsfile, stop jenkins, get result)
+` ./.github/jenkins-lts/run.sh`
+it shall:
+  - start jenkins
+  - create local Global Pipeline Library from local branch (1)
+  - run Jenkinsfile from local branch (1)
+  - stop jenkins
+  - get result
+
+  (1) CAUTION: changes to test must be commited in the local branch
+
+* to keep instance running after the test and make it accessible on http://localhost:8080 (jenkins/jenkins)
+`./.github/jenkins-lts/run.sh -keepalive -port 8080`
 
 ## Change log <a name="changelog"></a>
 
