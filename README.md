@@ -558,8 +558,10 @@ Note:
 
 ## How to test <a name="tests"></a>
 
-* to test on jenkins lts (start jenkins, create local Global Pipeline Library from current repo, run Jenkinsfile, stop jenkins, get result)
-` ./.github/jenkins-lts/run.sh`
+* to test on jenkins lts
+```
+ ./.github/jenkins-lts/run.sh
+```
 it shall:
   - start jenkins
   - create local Global Pipeline Library from local branch (1)
@@ -570,7 +572,9 @@ it shall:
   (1) CAUTION: changes to test must be commited in the local branch
 
 * to keep instance running after the test and make it accessible on http://localhost:8080 (jenkins/jenkins)
-`./.github/jenkins-lts/run.sh -keepalive -port 8080`
+```
+./.github/jenkins-lts/run.sh -keepalive -port 8080
+```
 
 ## Change log <a name="changelog"></a>
 
