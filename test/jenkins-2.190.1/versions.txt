@@ -1,0 +1,175 @@
+Jenkins Instance Version : 2.190.1
+Plugins : 
+	JavaScript GUI Lib: ACE Editor bundle plugin (ace-editor) v1.1
+	Active Directory plugin (active-directory) v2.16.1
+	AnsiColor (ansicolor) v0.7.0
+	Ant Plugin (ant) v1.11
+	OWASP Markup Formatter Plugin (antisamy-markup-formatter) v1.6
+	Apache HttpComponents Client 4.x API Plugin (apache-httpcomponents-client-4-api) v4.5.10-2.0
+	Authentication Tokens API Plugin (authentication-tokens) v1.4
+	CloudBees AWS Credentials Plugin (aws-credentials) v1.28
+	Amazon Web Services SDK (aws-java-sdk) v1.11.723
+	Backup plugin (backup) v1.6.1
+	Blue Ocean (blueocean) v1.24.3
+	Autofavorite for Blue Ocean (blueocean-autofavorite) v1.2.4
+	Bitbucket Pipeline for Blue Ocean (blueocean-bitbucket-pipeline) v1.24.3
+	Common API for Blue Ocean (blueocean-commons) v1.24.3
+	Config API for Blue Ocean (blueocean-config) v1.24.3
+	Blue Ocean Core JS (blueocean-core-js) v1.24.3
+	Dashboard for Blue Ocean (blueocean-dashboard) v1.24.3
+	Display URL for Blue Ocean (blueocean-display-url) v2.4.0
+	Events API for Blue Ocean (blueocean-events) v1.24.3
+	Git Pipeline for Blue Ocean (blueocean-git-pipeline) v1.24.3
+	GitHub Pipeline for Blue Ocean (blueocean-github-pipeline) v1.24.3
+	i18n for Blue Ocean (blueocean-i18n) v1.24.3
+	JIRA Integration for Blue Ocean (blueocean-jira) v1.24.3
+	JWT for Blue Ocean (blueocean-jwt) v1.24.3
+	Personalization for Blue Ocean (blueocean-personalization) v1.24.3
+	Pipeline implementation for Blue Ocean (blueocean-pipeline-api-impl) v1.24.3
+	Blue Ocean Pipeline Editor (blueocean-pipeline-editor) v1.24.3
+	Pipeline SCM API for Blue Ocean (blueocean-pipeline-scm-api) v1.24.3
+	REST API for Blue Ocean (blueocean-rest) v1.24.3
+	REST Implementation for Blue Ocean (blueocean-rest-impl) v1.24.3
+	Web for Blue Ocean (blueocean-web) v1.24.3
+	bouncycastle API Plugin (bouncycastle-api) v2.18
+	Branch API Plugin (branch-api) v2.6.2
+	Build Name and Description Setter (build-name-setter) v2.1.0
+	Build Pipeline Plugin (build-pipeline-plugin) v1.5.8
+	Build Symlink Plugin (build-symlink) v1.1
+	Build Timeout (build-timeout) v1.19.1
+	build user vars plugin (build-user-vars-plugin) v1.6
+	Bitbucket Branch Source Plugin (cloudbees-bitbucket-branch-source) v2.9.5
+	Folders Plugin (cloudbees-folder) v6.14
+	Command Agent Launcher Plugin (command-launcher) v1.2
+	Conditional BuildStep (conditional-buildstep) v1.3.6
+	Config File Provider Plugin (config-file-provider) v3.7.0
+	Configuration as Code Plugin (configuration-as-code) v1.36.2
+	Copy Artifact Plugin (copyartifact) v1.42.1
+	Create Job Advanced (createjobadvanced) v1.8
+	Credentials Plugin (credentials) v2.3.11
+	Credentials Binding Plugin (credentials-binding) v1.24
+	Dashboard View (dashboard-view) v2.14
+	description setter plugin (description-setter) v1.10
+	Display URL API (display-url-api) v2.3.4
+	Docker Commons Plugin (docker-commons) v1.16
+	Docker API Plugin (docker-java-api) v3.1.5.2
+	Docker plugin (docker-plugin) v1.2.1
+	Docker Slaves Plugin (docker-slaves) v1.0.7
+	Docker Pipeline (docker-workflow) v1.25
+	Downstream-Ext (downstream-ext) v1.8
+	Durable Task Plugin (durable-task) v1.35
+	Dynamic Axis (dynamic-axis) v1.0.3
+	Email Extension Plugin (email-ext) v2.80
+	Environment Injector Plugin (envinject) v2.3.0
+	EnvInject API Plugin (envinject-api) v1.7
+	External Monitor Job Type Plugin (external-monitor-job) v1.7
+	Favorite (favorite) v2.3.2
+	Git plugin (git) v4.2.2
+	Git client plugin (git-client) v3.2.1
+	Git Parameter Plug-In (git-parameter) v0.9.13
+	GIT server Plugin (git-server) v1.9
+	GitHub plugin (github) v1.32.0
+	GitHub API Plugin (github-api) v1.117
+	GitHub Branch Source Plugin (github-branch-source) v2.9.1
+	Google OAuth Credentials plugin (google-oauth-plugin) v1.0.2
+	Groovy (groovy) v2.3
+	H2 API Plugin (h2-api) v1.4.199
+	JavaScript GUI Lib: Handlebars bundle plugin (handlebars) v1.1.1
+	Handy Uri Templates 2.x API Plugin (handy-uri-templates-2-api) v2.1.8-1.0
+	HTML Publisher plugin (htmlpublisher) v1.25
+	Icon Shim Plugin (icon-shim) v2.0.3
+	Jackson 2 API Plugin (jackson2-api) v2.11.1
+	Javadoc Plugin (javadoc) v1.6
+	Oracle Java SE Development Kit Installer Plugin (jdk-tool) v1.4
+	Design Language (jenkins-design-language) v1.24.3
+	Jira plugin (jira) v3.1.1
+	JIRA Pipeline Steps (jira-steps) v1.6.0
+	Job Configuration History Plugin (jobConfigHistory) v2.26
+	Join plugin (join) v1.21
+	jQuery plugin (jquery) v1.12.4-1
+	JavaScript GUI Lib: jQuery bundles (jQuery and jQuery UI) plugin (jquery-detached) v1.2.1
+	JSch dependency plugin (jsch) v0.1.55.2
+	JUnit Plugin (junit) v1.29
+	Kubernetes plugin (kubernetes) v1.24.1
+	Kubernetes Client API Plugin (kubernetes-client-api) v4.9.1-1
+	Kubernetes Credentials Plugin (kubernetes-credentials) v0.6.2
+	Kubernetes Credentials Provider (kubernetes-credentials-provider) v0.15
+	Kubernetes :: Pipeline :: DevOps Steps (kubernetes-pipeline-devops-steps) v1.6
+	LDAP Plugin (ldap) v1.25
+	Lockable Resources plugin (lockable-resources) v2.10
+	Log Parser Plugin (log-parser) v2.1
+	Mailer Plugin (mailer) v1.32.1
+	MapDB API Plugin (mapdb-api) v1.0.9.0
+	Mask Passwords Plugin (mask-passwords) v2.13
+	Matrix Authorization Strategy Plugin (matrix-auth) v2.5.1
+	Matrix Combinations Plugin (matrix-combinations-parameter) v1.3.1
+	Matrix Project Plugin (matrix-project) v1.18
+	Matrix Tie Parent plugin (matrixtieparent) v1.2
+	Maven Integration plugin (maven-plugin) v3.7
+	Mercurial plugin (mercurial) v2.8
+	Metrics Plugin (metrics) v4.0.2.6
+	JavaScript GUI Lib: Moment.js bundle plugin (momentjs) v1.1.1
+	Nexus Platform Plugin (nexus-jenkins-plugin) v3.9.20201109-154552.99ba8b9
+	Node and Label parameter plugin (nodelabelparameter) v1.7.2
+	OAuth Credentials plugin (oauth-credentials) v0.4
+	OkHttp Plugin (okhttp-api) v3.14.9
+	PAM Authentication plugin (pam-auth) v1.6
+	Parameter Separator Plugin (parameter-separator) v1.3
+	Parameterized Trigger plugin (parameterized-trigger) v2.39
+	Pipeline Aggregator View (pipeline-aggregator-view) v1.11
+	Pipeline: AWS Steps (pipeline-aws) v1.43
+	Pipeline: Build Step (pipeline-build-step) v2.13
+	Pipeline: Classpath Steps (pipeline-classpath) v0.1.0
+	Pipeline Configuration History Plugin (pipeline-config-history) v1.6
+	Pipeline Graph Analysis Plugin (pipeline-graph-analysis) v1.10
+	Pipeline: Input Step (pipeline-input-step) v2.12
+	Pipeline Maven Integration Plugin (pipeline-maven) v3.8.3
+	Pipeline: Milestone Step (pipeline-milestone-step) v1.3.1
+	Pipeline: Model API (pipeline-model-api) v1.7.2
+	Pipeline: Declarative Agent API (pipeline-model-declarative-agent) v1.1.1
+	Pipeline: Declarative (pipeline-model-definition) v1.7.2
+	Pipeline: Declarative Extension Points API (pipeline-model-extensions) v1.7.2
+	Pipeline: REST API Plugin (pipeline-rest-api) v2.19
+	Pipeline: Stage Step (pipeline-stage-step) v2.5
+	Pipeline: Stage Tags Metadata (pipeline-stage-tags-metadata) v1.7.2
+	Pipeline: Stage View Plugin (pipeline-stage-view) v2.19
+	Pipeline Utility Steps (pipeline-utility-steps) v2.6.1
+	Plain Credentials Plugin (plain-credentials) v1.7
+	Hudson Post build task (postbuild-task) v1.8
+	PowerShell plugin (powershell) v1.4
+	Prometheus metrics plugin (prometheus) v2.0.6
+	Pub-Sub "light" Bus (pubsub-light) v1.13
+	Rebuilder (rebuild) v1.31
+	Resource Disposer Plugin (resource-disposer) v0.14
+	Run Condition Plugin (run-condition) v1.3
+	SCM API Plugin (scm-api) v2.6.4
+	Script Security Plugin (script-security) v1.75
+	Snakeyaml API Plugin (snakeyaml-api) v1.26.3
+	SonarQube Scanner for Jenkins (sonar) v2.13
+	Server Sent Events (SSE) Gateway Plugin (sse-gateway) v1.24
+	SSH Agent Plugin (ssh-agent) v1.20
+	SSH Credentials Plugin (ssh-credentials) v1.18.1
+	SSH Slaves plugin (ssh-slaves) v1.30.2
+	Structs Plugin (structs) v1.20
+	Subversion Plug-in (subversion) v2.13.2
+	TestLink Plugin (testlink) v3.16
+	Throttle Concurrent Builds Plug-in (throttle-concurrents) v2.0.3
+	Timestamper (timestamper) v1.11.6
+	Token Macro Plugin (token-macro) v2.12
+	Trilead API Plugin (trilead-api) v1.0.10
+	Active Choices Plug-in (uno-choice) v2.2.2
+	Variant Plugin (variant) v1.3
+	WMI Windows Agents Plugin (windows-slaves) v1.6
+	Pipeline (workflow-aggregator) v2.6
+	Pipeline: API (workflow-api) v2.40
+	Pipeline: Basic Steps (workflow-basic-steps) v2.21
+	Pipeline: Groovy (workflow-cps) v2.87
+	Pipeline: Shared Groovy Libraries (workflow-cps-global-lib) v2.17
+	Pipeline: Nodes and Processes (workflow-durable-task-step) v2.35
+	Pipeline: Job (workflow-job) v2.40
+	Pipeline: Multibranch (workflow-multibranch) v2.22
+	Pipeline: SCM Step (workflow-scm-step) v2.11
+	Pipeline: Step API (workflow-step-api) v2.23
+	Pipeline: Supporting APIs (workflow-support) v3.7
+	Workspace Cleanup Plugin (ws-cleanup) v0.38
+	Xcode integration (xcode-plugin) v2.0.14

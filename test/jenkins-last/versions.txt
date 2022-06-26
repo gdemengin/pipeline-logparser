@@ -61,7 +61,7 @@ Plugins :
 	commons-text API Plugin (commons-text-api) v1.9-9.v39a_53e2e0343
 	Conditional BuildStep (conditional-buildstep) v1.4.2
 	Config File Provider Plugin (config-file-provider) v3.10.0
-	Configuration as Code Plugin (configuration-as-code) v1462.v069a_b_57ff5c8
+	Configuration as Code Plugin (configuration-as-code) v1464.vd8507b_82e41a_
 	Copy Artifact Plugin (copyartifact) v1.46.4
 	Create Job Advanced (createjobadvanced) v1.9.0
 	Credentials Plugin (credentials) v1129.vef26f5df883c
@@ -109,7 +109,7 @@ Plugins :
 	JIRA Pipeline Steps (jira-steps) v2.0.141.vd0c6e6dc83f0
 	Java JSON Web Token (JJWT) Plugin (jjwt-api) v0.11.5-77.v646c772fddb_0
 	Job DSL (job-dsl) v1.79
-	Job Configuration History Plugin (jobConfigHistory) v1148.v8607da_ef251e
+	Job Configuration History Plugin (jobConfigHistory) v1155.v28a_46a_cc06a_5
 	Join plugin (join) v1.21
 	jQuery plugin (jquery) v1.12.4-1
 	JavaScript GUI Lib: jQuery bundles (jQuery and jQuery UI) plugin (jquery-detached) v1.2.1
@@ -178,7 +178,7 @@ Plugins :
 	SonarQube Scanner for Jenkins (sonar) v2.14
 	Server Sent Events (SSE) Gateway Plugin (sse-gateway) v1.25
 	SSH Agent Plugin (ssh-agent) v295.v9ca_a_1c7cc3a_a_
-	SSH Credentials Plugin (ssh-credentials) v277.v95c2fec1c047
+	SSH Credentials Plugin (ssh-credentials) v287.v0c2c2889c28d
 	SSH Build Agents plugin (ssh-slaves) v1.821.vd834f8a_c390e
 	SSH server (sshd) v3.242.va_db_9da_b_26a_c3
 	Structs Plugin (structs) v318.va_f3ccb_729b_71

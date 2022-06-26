@@ -20,8 +20,8 @@ done
 
 cd $(dirname $0)
 
-docker build -t jenkins-lts .
+docker build -t jenkins-2.190.1 .
 export GITHUB_WORKSPACE=/workspace
 export GITHUB_SHA=$(git rev-parse --verify HEAD)
 
-docker run -it --rm -e GITHUB_SHA -e GITHUB_WORKSPACE -v "$(pwd -P)/../../":"/workspace" -it ${PORT_ARG} jenkins-lts ${KEEPALIVE_ARG}
+docker run -it --rm -e GITHUB_SHA -e GITHUB_WORKSPACE -v "$(pwd -P)/../../":"/workspace" -it ${PORT_ARG} jenkins-2.190.1 ${KEEPALIVE_ARG}

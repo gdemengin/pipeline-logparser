@@ -1,4 +1,0 @@
-name: 'jenkins-lts'
-runs:
-  using: 'docker'
-  image: './Dockerfile'

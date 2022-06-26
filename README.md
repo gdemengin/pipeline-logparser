@@ -1,4 +1,7 @@
 # pipeline-logparser
+
+[![.github/workflows/main.yml](https://github.com/gdemengin/pipeline-logparser/actions/workflows/main.yml/badge.svg)](https://github.com/gdemengin/pipeline-logparser/actions/workflows/main.yml)
+[![.github/workflows/update-version.yml](https://github.com/gdemengin/pipeline-logparser/actions/workflows/update-version.yml/badge.svg)](https://github.com/gdemengin/pipeline-logparser/actions/workflows/update-version.yml)
   
 A library to parse and filter logs
 * workaround for https://issues.jenkins-ci.org/browse/JENKINS-54304 to help accessing/identifying logs from parallel branches
@@ -11,8 +14,11 @@ Content:
   * it provides accessors to 'pipeline step' logs
   * it provides accessors to 'Blue Ocean' logs urls for parallel branches and stages
   
-Compatibility:
-  * tested with 2.190.1 & 2.319.3
+Tested with:
+
+[![test/jenkins-lts/plugins.txt](https://img.shields.io/badge/jenkins-lts-blue.svg)](test/jenkins-lts/plugins.txt)
+[![test/jenkins-last/versions.txt](https://img.shields.io/badge/jenkins-2.346.1-blue.svg)](test/jenkins-last/versions.txt)
+[![test/jenkins-2.190.1/versions.txt](https://img.shields.io/badge/jenkins-2.190.1-blue.svg)](test/jenkins-2.190.1/versions.txt)
 
 ## Table of contents
 - [Documentation](#documentation)
@@ -559,10 +565,10 @@ Note:
 ## How to test <a name="tests"></a>
 
 * to test on jenkins lts
-```
- ./.github/jenkins-lts/run.sh
-```
-it shall:
+  ```
+  ./test/jenkins-lts/run.sh
+  ```
+  it shall:
   - start jenkins
   - create local Global Pipeline Library from local branch (1)
   - run Jenkinsfile from local branch (1)
@@ -571,10 +577,15 @@ it shall:
 
   (1) CAUTION: changes to test must be commited in the local branch
 
+* to test on jenkins last known good version
+  ```
+  ./test/jenkins-last/run.sh
+  ```
+
 * to keep instance running after the test and make it accessible on http://localhost:8080 (jenkins/jenkins)
-```
-./.github/jenkins-lts/run.sh -keepalive -port 8080
-```
+  ```
+  ./test/jenkins-lts/run.sh -keepalive -port 8080
+  ```
 
 ## Change log <a name="changelog"></a>
 

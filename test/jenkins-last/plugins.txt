@@ -59,7 +59,7 @@ commons-lang3-api:3.12.0.0
 commons-text-api:1.9-9.v39a_53e2e0343
 conditional-buildstep:1.4.2
 config-file-provider:3.10.0
-configuration-as-code:1462.v069a_b_57ff5c8
+configuration-as-code:1464.vd8507b_82e41a_
 copyartifact:1.46.4
 createjobadvanced:1.9.0
 credentials:1129.vef26f5df883c
@@ -107,7 +107,7 @@ jira:3.7.1
 jira-steps:2.0.141.vd0c6e6dc83f0
 jjwt-api:0.11.5-77.v646c772fddb_0
 job-dsl:1.79
-jobConfigHistory:1148.v8607da_ef251e
+jobConfigHistory:1155.v28a_46a_cc06a_5
 join:1.21
 jquery:1.12.4-1
 jquery-detached:1.2.1
@@ -176,7 +176,7 @@ snakeyaml-api:1.30.1
 sonar:2.14
 sse-gateway:1.25
 ssh-agent:295.v9ca_a_1c7cc3a_a_
-ssh-credentials:277.v95c2fec1c047
+ssh-credentials:287.v0c2c2889c28d
 ssh-slaves:1.821.vd834f8a_c390e
 sshd:3.242.va_db_9da_b_26a_c3
 structs:318.va_f3ccb_729b_71

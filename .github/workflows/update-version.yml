@@ -11,30 +11,25 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: test jenkins-lts
-        uses: ./.github/jenkins-lts/
+        uses: ./test/jenkins-lts/
       - name: Update last good version
         if: github.event_name != 'pull_request'
         run: |
-          rm -rf ./.github/jenkins-last
-          cp -r ./.github/jenkins-lts ./.github/jenkins-last
-          cp -f .version/plugins.txt ./.github/jenkins-last/
-          cp -f .version/versions.txt ./.github/jenkins-last/
-          echo "FROM jenkins/jenkins:$(cat .version/version)" > ./.github/jenkins-last/Dockerfile
-          tail -n +2 ./.github/jenkins-lts/Dockerfile >> ./.github/jenkins-last/Dockerfile
-          echo "name: 'jenkins-last'" > ./.github/jenkins-last/action.yml
-          tail -n +2 ./.github/jenkins-lts/action.yml >> ./.github/jenkins-last/action.yml
+          chmod +x ./test/update-version.sh
+          ./test/update-version.sh
 
-          git status --porcelain ./.github/jenkins-last
-          if [ $(git status --porcelain ./.github/jenkins-last | wc -l) -eq 0 ]; then
+          git status --porcelain ./test/jenkins-last README.md
+          if [ $(git status --porcelain ./test/jenkins-last README.md | wc -l) -eq 0 ]; then
               echo "jenkins_last_changed=false" >> ${GITHUB_ENV}
           else
               echo "jenkins_last_changed=true" >> ${GITHUB_ENV}
+              git diff
           fi
       - name: push last good version
         if: github.event_name != 'pull_request' && env.jenkins_last_changed == 'true'
         run: |
-          git config --global user.name 'logparser-action[bot]'
-          git config --global user.email 'logparser-action[bot]@users.noreply.github.com'
-          git add ./.github/jenkins-last
+          git config --global user.name 'logparser-action'
+          git config --global user.email 'logparser-action@users.noreply.github.com'
+          git add ./test/jenkins-last README.md
           git commit -m "[bot] Update last good jenkins version tested"
           git push
