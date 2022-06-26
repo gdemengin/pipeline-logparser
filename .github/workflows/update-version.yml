@@ -1,0 +1,40 @@
+on:
+  schedule:
+    # once a week to check with latest version of plugins
+    - cron:  '0 19 * * 1'
+  workflow_dispatch:
+
+jobs:
+  jenkins-lts:
+    runs-on: ubuntu-latest
+    name: test on jenkins-lts
+    steps:
+      - uses: actions/checkout@v3
+      - name: test jenkins-lts
+        uses: ./.github/jenkins-lts/
+      - name: Update last good version
+        if: github.event_name != 'pull_request'
+        run: |
+          rm -rf ./.github/jenkins-last
+          cp -r ./.github/jenkins-lts ./.github/jenkins-last
+          cp -f .version/plugins.txt ./.github/jenkins-last/
+          cp -f .version/versions.txt ./.github/jenkins-last/
+          echo "FROM jenkins/jenkins:$(cat .version/version)" > ./.github/jenkins-last/Dockerfile
+          tail -n +2 ./.github/jenkins-lts/Dockerfile >> ./.github/jenkins-last/Dockerfile
+          echo "name: 'jenkins-last'" > ./.github/jenkins-last/action.yml
+          tail -n +2 ./.github/jenkins-lts/action.yml >> ./.github/jenkins-last/action.yml
+
+          git status --porcelain ./.github/jenkins-last
+          if [ $(git status --porcelain ./.github/jenkins-last | wc -l) -eq 0 ]; then
+              echo "jenkins_last_changed=false" >> ${GITHUB_ENV}
+          else
+              echo "jenkins_last_changed=true" >> ${GITHUB_ENV}
+          fi
+      - name: push last good version
+        if: github.event_name != 'pull_request' && env.jenkins_last_changed == 'true'
+        run: |
+          git config --global user.name 'logparser-action[bot]'
+          git config --global user.email 'logparser-action[bot]@users.noreply.github.com'
+          git add ./.github/jenkins-last
+          git commit -m "[bot] Update last good jenkins version tested"
+          git push

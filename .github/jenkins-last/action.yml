@@ -1,0 +1,4 @@
+name: 'jenkins-last'
+runs:
+  using: 'docker'
+  image: './Dockerfile'
