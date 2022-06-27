@@ -6,12 +6,13 @@ antisamy-markup-formatter:2.7
 apache-httpcomponents-client-4-api:4.5.13-1.0
 authentication-tokens:1.4
 aws-credentials:191.vcb_f183ce58b_9
+aws-java-sdk:1.12.246-349.v96b_b_f7eb_a_c3c
 aws-java-sdk-cloudformation:1.12.246-349.v96b_b_f7eb_a_c3c
 aws-java-sdk-codebuild:1.12.246-349.v96b_b_f7eb_a_c3c
 aws-java-sdk-ec2:1.12.246-349.v96b_b_f7eb_a_c3c
 aws-java-sdk-ecr:1.12.246-349.v96b_b_f7eb_a_c3c
 aws-java-sdk-ecs:1.12.246-349.v96b_b_f7eb_a_c3c
-aws-java-sdk-elasticbeanstalk:1.12.215-343.v953e693f0e86
+aws-java-sdk-elasticbeanstalk:1.12.246-349.v96b_b_f7eb_a_c3c
 aws-java-sdk-iam:1.12.246-349.v96b_b_f7eb_a_c3c
 aws-java-sdk-logs:1.12.246-349.v96b_b_f7eb_a_c3c
 aws-java-sdk-minimal:1.12.246-349.v96b_b_f7eb_a_c3c
@@ -126,7 +127,7 @@ mapdb-api:1.0.9.0
 mask-passwords:3.3
 matrix-auth:3.1.3
 matrix-combinations-parameter:1.3.1
-matrix-project:771.v574584b_39e60
+matrix-project:772.v494f19991984
 maven-plugin:3.19
 mercurial:2.16.2
 metrics:4.1.6.2
@@ -141,6 +142,7 @@ pam-auth:1.8
 parameter-separator:1.3
 parameterized-trigger:2.44
 pipeline-aggregator-view:1.11
+pipeline-aws:1.43
 pipeline-build-step:2.18
 pipeline-config-history:1.6
 pipeline-github-lib:38.v445716ea_edda_
@@ -192,7 +194,7 @@ workflow-api:1164.v760c223ddb_32
 workflow-basic-steps:948.v2c72a_091b_b_68
 workflow-cps:2725.v7b_c717eb_12ce
 workflow-cps-global-lib:588.v576c103a_ff86
-workflow-durable-task-step:1146.v1a_d2e603f929
+workflow-durable-task-step:1155.v79567b_e0a_2de
 workflow-job:1189.va_d37a_e9e4eda_
 workflow-multibranch:716.vc692a_e52371b_
 workflow-scm-step:400.v6b_89a_1317c9a_

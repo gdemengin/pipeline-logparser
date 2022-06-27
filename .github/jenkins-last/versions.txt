@@ -8,12 +8,13 @@ Plugins :
 	Apache HttpComponents Client 4.x API Plugin (apache-httpcomponents-client-4-api) v4.5.13-1.0
 	Authentication Tokens API Plugin (authentication-tokens) v1.4
 	CloudBees AWS Credentials Plugin (aws-credentials) v191.vcb_f183ce58b_9
+	Amazon Web Services SDK :: All (aws-java-sdk) v1.12.246-349.v96b_b_f7eb_a_c3c
 	Amazon Web Services SDK :: CloudFormation (aws-java-sdk-cloudformation) v1.12.246-349.v96b_b_f7eb_a_c3c
 	Amazon Web Services SDK :: CodeBuild (aws-java-sdk-codebuild) v1.12.246-349.v96b_b_f7eb_a_c3c
 	Amazon Web Services SDK :: EC2 (aws-java-sdk-ec2) v1.12.246-349.v96b_b_f7eb_a_c3c
 	Amazon Web Services SDK :: ECR (aws-java-sdk-ecr) v1.12.246-349.v96b_b_f7eb_a_c3c
 	Amazon Web Services SDK :: ECS (aws-java-sdk-ecs) v1.12.246-349.v96b_b_f7eb_a_c3c
-	Amazon Web Services SDK :: Elastic Beanstalk (aws-java-sdk-elasticbeanstalk) v1.12.215-343.v953e693f0e86
+	Amazon Web Services SDK :: Elastic Beanstalk (aws-java-sdk-elasticbeanstalk) v1.12.246-349.v96b_b_f7eb_a_c3c
 	Amazon Web Services SDK :: IAM (aws-java-sdk-iam) v1.12.246-349.v96b_b_f7eb_a_c3c
 	Amazon Web Services SDK :: Logs (aws-java-sdk-logs) v1.12.246-349.v96b_b_f7eb_a_c3c
 	Amazon Web Services SDK :: Minimal (aws-java-sdk-minimal) v1.12.246-349.v96b_b_f7eb_a_c3c
@@ -128,7 +129,7 @@ Plugins :
 	Mask Passwords Plugin (mask-passwords) v3.3
 	Matrix Authorization Strategy Plugin (matrix-auth) v3.1.3
 	Matrix Combinations Plugin (matrix-combinations-parameter) v1.3.1
-	Matrix Project Plugin (matrix-project) v771.v574584b_39e60
+	Matrix Project Plugin (matrix-project) v772.v494f19991984
 	Maven Integration plugin (maven-plugin) v3.19
 	Mercurial plugin (mercurial) v2.16.2
 	Metrics Plugin (metrics) v4.1.6.2
@@ -143,6 +144,7 @@ Plugins :
 	Parameter Separator Plugin (parameter-separator) v1.3
 	Parameterized Trigger plugin (parameterized-trigger) v2.44
 	Pipeline Aggregator View (pipeline-aggregator-view) v1.11
+	Pipeline: AWS Steps (pipeline-aws) v1.43
 	Pipeline: Build Step (pipeline-build-step) v2.18
 	Pipeline Configuration History Plugin (pipeline-config-history) v1.6
 	Pipeline: GitHub Groovy Libraries (pipeline-github-lib) v38.v445716ea_edda_
@@ -194,7 +196,7 @@ Plugins :
 	Pipeline: Basic Steps (workflow-basic-steps) v948.v2c72a_091b_b_68
 	Pipeline: Groovy (workflow-cps) v2725.v7b_c717eb_12ce
 	Pipeline: Deprecated Groovy Libraries (workflow-cps-global-lib) v588.v576c103a_ff86
-	Pipeline: Nodes and Processes (workflow-durable-task-step) v1146.v1a_d2e603f929
+	Pipeline: Nodes and Processes (workflow-durable-task-step) v1155.v79567b_e0a_2de
 	Pipeline: Job (workflow-job) v1189.va_d37a_e9e4eda_
 	Pipeline: Multibranch (workflow-multibranch) v716.vc692a_e52371b_
 	Pipeline: SCM Step (workflow-scm-step) v400.v6b_89a_1317c9a_
