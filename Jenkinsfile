@@ -477,6 +477,7 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
 
     // full logs
     def fullLog = logparser.getLogsWithBranchInfo()
+    assert fullLog != '', 'failed to parse logs: full log cannot be empty'
 
     // branch by branch
     def logsNoBranch = logparser.getLogsWithBranchInfo(filter:[null])
@@ -589,15 +590,18 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
     def notimestampLog = logparser.getLogsWithBranchInfo(filter:['notimestamp'])
     def timestampLog = logparser.getLogsWithBranchInfo(filter:['timestamp'])
 
+    // detect if global timestamp is configured at instance level
+    // either not configured
     def noGlobalTimestamp = notimestampLog == '[notimestamp] \n'
+    // or configured
     def globalTimestamp = notimestampLog ==~ /\[notimestamp\] \[[^\[\]]*\] \n/
-    // make sure we detected global timestamp setting correclty (if both are false something is wrong)
-    assert noGlobalTimestamp != globalTimestamp, "failed to detect global timestamps setting branch\nnotimestamp log:\n'''${notimestampLog}'''"
+    // make sure they do not have the same value
+    // (if both are false something is wrong in the way we detected it)
+    assert noGlobalTimestamp != globalTimestamp, "failed to detect global timestamps status\nnotimestamp log:\n'''${notimestampLog}'''"
 
+    // now check that local timestamp always appears
     def localTimestamp = timestampLog ==~ /\[timestamp\] \[[^\[\]]*\] \n/
-    // make sure local and global timestamp are coherent
-    assert noGlobalTimestamp == localTimestamp, "failed to detect global timestamps setting branch\nnotimestamp log:\n'''${notimestampLog}'''\nlocal timestamp log:\n'''${timestampLog}'''"
-
+    assert localTimestamp == true, "failed to detect local timestamps\nlocal timestamp log:\n'''${timestampLog}'''"
 
     // 3.5/ strip logs accordingly
     if (globalTimestamp) {
