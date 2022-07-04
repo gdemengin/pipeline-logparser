@@ -62,7 +62,7 @@ config-file-provider:3.10.0
 configuration-as-code:1464.vd8507b_82e41a_
 copyartifact:1.46.4
 createjobadvanced:1.9.0
-credentials:1129.vef26f5df883c
+credentials:1139.veb_9579fca_33b_
 credentials-binding:523.vd859a_4b_122e6
 dashboard-view:2.432.va_712ce35862d
 description-setter:1.10
@@ -88,9 +88,9 @@ git-parameter:0.9.17
 git-server:1.11
 github:1.34.4
 github-api:1.303-400.v35c2d8258028
-github-branch-source:1637.vd833b_7ca_7654
+github-branch-source:1656.v77eddb_b_e95df
 google-oauth-plugin:1.0.6
-gradle:1.39.1
+gradle:1.39.2
 groovy:2.4
 h2-api:1.4.199
 handlebars:3.0.8
@@ -106,7 +106,7 @@ jenkins-design-language:1.25.5
 jira:3.7.1
 jira-steps:2.0.141.vd0c6e6dc83f0
 jjwt-api:0.11.5-77.v646c772fddb_0
-job-dsl:1.79
+job-dsl:1.80
 jobConfigHistory:1155.v28a_46a_cc06a_5
 join:1.21
 jquery:1.12.4-1
@@ -125,7 +125,7 @@ log-parser:2.2
 mailer:414.vcc4c33714601
 mapdb-api:1.0.9.0
 mask-passwords:3.3
-matrix-auth:3.1.3
+matrix-auth:3.1.4
 matrix-combinations-parameter:1.3.1
 matrix-project:772.v494f19991984
 maven-plugin:3.19
@@ -172,11 +172,11 @@ run-condition:1.5
 saml:2.298.vc7a_2b_3958628
 scm-api:608.vfa_f971c5a_a_e9
 script-security:1175.v4b_d517d6db_f0
-snakeyaml-api:1.30.1
+snakeyaml-api:1.30.2-76.vc104f7ce9870
 sonar:2.14
 sse-gateway:1.25
 ssh-agent:295.v9ca_a_1c7cc3a_a_
-ssh-credentials:287.v0c2c2889c28d
+ssh-credentials:291.v8211e4f8efb_c
 ssh-slaves:1.821.vd834f8a_c390e
 sshd:3.242.va_db_9da_b_26a_c3
 structs:318.va_f3ccb_729b_71
@@ -189,8 +189,8 @@ trilead-api:1.57.v6e90e07157e1
 uno-choice:2.6.2
 variant:1.4
 windows-slaves:1.8.1
-workflow-aggregator:581.v0c46fa_697ffd
-workflow-api:1164.v760c223ddb_32
+workflow-aggregator:590.v6a_d052e5a_a_b_5
+workflow-api:1165.v02c3db_a_6b_e36
 workflow-basic-steps:948.v2c72a_091b_b_68
 workflow-cps:2725.v7b_c717eb_12ce
 workflow-cps-global-lib:588.v576c103a_ff86

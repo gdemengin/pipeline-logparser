@@ -64,7 +64,7 @@ Plugins :
 	Configuration as Code Plugin (configuration-as-code) v1464.vd8507b_82e41a_
 	Copy Artifact Plugin (copyartifact) v1.46.4
 	Create Job Advanced (createjobadvanced) v1.9.0
-	Credentials Plugin (credentials) v1129.vef26f5df883c
+	Credentials Plugin (credentials) v1139.veb_9579fca_33b_
 	Credentials Binding Plugin (credentials-binding) v523.vd859a_4b_122e6
 	Dashboard View (dashboard-view) v2.432.va_712ce35862d
 	description setter plugin (description-setter) v1.10
@@ -90,9 +90,9 @@ Plugins :
 	GIT server Plugin (git-server) v1.11
 	GitHub plugin (github) v1.34.4
 	GitHub API Plugin (github-api) v1.303-400.v35c2d8258028
-	GitHub Branch Source Plugin (github-branch-source) v1637.vd833b_7ca_7654
+	GitHub Branch Source Plugin (github-branch-source) v1656.v77eddb_b_e95df
 	Google OAuth Credentials plugin (google-oauth-plugin) v1.0.6
-	Gradle Plugin (gradle) v1.39.1
+	Gradle Plugin (gradle) v1.39.2
 	Groovy (groovy) v2.4
 	H2 API Plugin (h2-api) v1.4.199
 	JavaScript GUI Lib: Handlebars bundle plugin (handlebars) v3.0.8
@@ -108,7 +108,7 @@ Plugins :
 	Jira plugin (jira) v3.7.1
 	JIRA Pipeline Steps (jira-steps) v2.0.141.vd0c6e6dc83f0
 	Java JSON Web Token (JJWT) Plugin (jjwt-api) v0.11.5-77.v646c772fddb_0
-	Job DSL (job-dsl) v1.79
+	Job DSL (job-dsl) v1.80
 	Job Configuration History Plugin (jobConfigHistory) v1155.v28a_46a_cc06a_5
 	Join plugin (join) v1.21
 	jQuery plugin (jquery) v1.12.4-1
@@ -127,7 +127,7 @@ Plugins :
 	Mailer Plugin (mailer) v414.vcc4c33714601
 	MapDB API Plugin (mapdb-api) v1.0.9.0
 	Mask Passwords Plugin (mask-passwords) v3.3
-	Matrix Authorization Strategy Plugin (matrix-auth) v3.1.3
+	Matrix Authorization Strategy Plugin (matrix-auth) v3.1.4
 	Matrix Combinations Plugin (matrix-combinations-parameter) v1.3.1
 	Matrix Project Plugin (matrix-project) v772.v494f19991984
 	Maven Integration plugin (maven-plugin) v3.19
@@ -174,11 +174,11 @@ Plugins :
 	SAML Plugin (saml) v2.298.vc7a_2b_3958628
 	SCM API Plugin (scm-api) v608.vfa_f971c5a_a_e9
 	Script Security Plugin (script-security) v1175.v4b_d517d6db_f0
-	SnakeYAML API Plugin (snakeyaml-api) v1.30.1
+	SnakeYAML API Plugin (snakeyaml-api) v1.30.2-76.vc104f7ce9870
 	SonarQube Scanner for Jenkins (sonar) v2.14
 	Server Sent Events (SSE) Gateway Plugin (sse-gateway) v1.25
 	SSH Agent Plugin (ssh-agent) v295.v9ca_a_1c7cc3a_a_
-	SSH Credentials Plugin (ssh-credentials) v287.v0c2c2889c28d
+	SSH Credentials Plugin (ssh-credentials) v291.v8211e4f8efb_c
 	SSH Build Agents plugin (ssh-slaves) v1.821.vd834f8a_c390e
 	SSH server (sshd) v3.242.va_db_9da_b_26a_c3
 	Structs Plugin (structs) v318.va_f3ccb_729b_71
@@ -191,8 +191,8 @@ Plugins :
 	Active Choices Plug-in (uno-choice) v2.6.2
 	Variant Plugin (variant) v1.4
 	WMI Windows Agents Plugin (windows-slaves) v1.8.1
-	Pipeline (workflow-aggregator) v581.v0c46fa_697ffd
-	Pipeline: API (workflow-api) v1164.v760c223ddb_32
+	Pipeline (workflow-aggregator) v590.v6a_d052e5a_a_b_5
+	Pipeline: API (workflow-api) v1165.v02c3db_a_6b_e36
 	Pipeline: Basic Steps (workflow-basic-steps) v948.v2c72a_091b_b_68
 	Pipeline: Groovy (workflow-cps) v2725.v7b_c717eb_12ce
 	Pipeline: Deprecated Groovy Libraries (workflow-cps-global-lib) v588.v576c103a_ff86
