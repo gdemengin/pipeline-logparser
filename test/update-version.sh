@@ -2,7 +2,7 @@
 
 set -e
 
-# update jenbkins-last version with .version
+# update jenkins-last version with .version
 # must be run AFTER running jenkins-lts test
 
 cd $(dirname $0)/..

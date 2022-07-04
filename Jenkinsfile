@@ -43,6 +43,9 @@ node(LABEL_LINUX) {
 // uncomment if needed
 // logparser.setVerbose(true)
 
+// is Timestamper plugin affecting the logs
+GLOBAL_TIMESTAMP = null
+
 // =====================
 // = logparser tests   =
 // =====================
@@ -598,9 +601,17 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
     // make sure they do not have the same value
     // (if both are false something is wrong in the way we detected it)
     assert noGlobalTimestamp != globalTimestamp, "failed to detect global timestamps status\nnotimestamp log:\n'''${notimestampLog}'''"
+    GLOBAL_TIMESTAMP = globalTimestamp
 
     // now check that local timestamp always appears
-    def localTimestamp = timestampLog ==~ /\[timestamp\] \[[^\[\]]*\] \n/
+    def localTimestamp
+    if (noGlobalTimestamp) {
+        localTimestamp = timestampLog ==~ /\[timestamp\] \[[^\[\]]*\] \n/
+    } else {
+        // if globalTimestamp is set a warning appears on the first line
+        def plugin_warning = 'The timestamps step is unnecessary when timestamps are enabled for all Pipeline builds.'
+        localTimestamp = timestampLog ==~ /\[timestamp\] \[[^\[\]]*\] ${plugin_warning}\n\[timestamp\] \[[^\[\]]*\] \n/
+    }
     assert localTimestamp == true, "failed to detect local timestamps\nlocal timestamp log:\n'''${timestampLog}'''"
 
     // 3.5/ strip logs accordingly
@@ -1072,7 +1083,11 @@ def testCompletedJobs() {
     assert pipeline.result == 'SUCCESS'
     def log = logparser.getLogsWithBranchInfo([:], pipeline)
     print log
-    assert log.trim() == '[stage1] dummy pipeline for logparser tests', "log='${log.trim()}'"
+    if (! GLOBAL_TIMESTAMP) {
+        assert log.trim() == '[stage1] dummy pipeline for logparser tests', "log='${log.trim()}'"
+    } else {
+        assert log.trim() ==~ /\[stage1\] \[[^\[\]]*\] dummy pipeline for logparser tests/, "log='${log.trim()}'"
+    }
     def branches = logparser.getBranches([:], pipeline)
     assert branches == [ [null], ['stage1'] ], branches
     def bou = logparser.getBlueOceanUrls(pipeline)
