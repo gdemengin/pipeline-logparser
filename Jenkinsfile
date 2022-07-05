@@ -1,6 +1,5 @@
 // test pipeline for https://github.com/gdemengin/pipeline-logparser/
 
-
 properties([
     parameters([
         booleanParam(defaultValue: false, description: 'set to to true to run extra long tests (multiple hours + may fail if not enough heap)', name: 'FULL_LOGPARSER_TEST'),
@@ -34,6 +33,14 @@ node(LABEL_TEST_AGENT) {
     library(identifier: "pipeline-logparser@${rev}", changelog: false)
 }
 
+// ============================
+// = import library for tests =
+// ============================
+
+// blacklisted functions needed for test
+@Library('test-whitelist@master') _
+print testWhitelist.getVersion()
+print testWhitelist.getPlugins()
 
 // =============
 // = globals   =

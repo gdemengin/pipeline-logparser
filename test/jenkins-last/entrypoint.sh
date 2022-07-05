@@ -68,6 +68,21 @@ function create_local_repo() {
     # show status and last commit
     git status
     git show -q
+
+
+    cd /var/jenkins_home/test-whitelist
+
+    echo ""
+    echo "building local git repository from $(pwd)"
+
+    git config --global init.defaultBranch master
+    git init
+    git add -A
+
+    git config user.email "jenkins@localhost"
+    git config user.name "jenkins"
+
+    git commit -m "first commit"
 }
 
 function clean() {
