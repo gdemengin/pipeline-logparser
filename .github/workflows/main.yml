@@ -7,7 +7,15 @@ on:
 
 
 jobs:
-  # last good version: to update, run update-version workflow
+  jenkins-lts:
+    runs-on: ubuntu-latest
+    name: test on jenkins lts
+    steps:
+      - uses: actions/checkout@v3
+      - name: test jenkins-lts
+        uses: ./test/jenkins-lts/
+
+  # last good version: to update it, run "update-version.yml" workflow
   jenkins-last:
     runs-on: ubuntu-latest
     name: test on jenkins last good version

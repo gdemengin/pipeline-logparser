@@ -13,9 +13,8 @@ properties([
 // = constants   =
 // ===============
 
-// label on the instance with linux hosts
-// leave null if all hosts fit the description
-LABEL_LINUX='linux'
+// label on the instance with linux hosts and 4 executors
+LABEL_TEST_AGENT='test-agent'
 
 // set to to true to run extra long tests
 // (multiple hours + may fail if not enough heap)
@@ -29,7 +28,7 @@ RUN_MANYTHREAD_TIMING_TEST = params.MANYTHREAD_TIMING_TEST == true
 // = import logparser library =
 // ============================
 // @Library('pipeline-logparser@3.1.3') _
-node(LABEL_LINUX) {
+node(LABEL_TEST_AGENT) {
     checkout scm
     def rev=sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
     library(identifier: "pipeline-logparser@${rev}", changelog: false)
@@ -233,7 +232,7 @@ def runBranchesWithManyLines(nblines, expectedLogMap) {
     def start = 0
     parallel one: {
         print 'STRIP_NODE_LOG_START'
-        node(LABEL_LINUX) {
+        node(LABEL_TEST_AGENT) {
             timeout(5) { // wait for other branch ... but no more than 5 minutes to avoid deadlock
                 print 'STRIP_NODE_LOG_STOP'
                 start += 1
@@ -246,7 +245,7 @@ def runBranchesWithManyLines(nblines, expectedLogMap) {
         }
     }, two: {
         print 'STRIP_NODE_LOG_START'
-        node(LABEL_LINUX) {
+        node(LABEL_TEST_AGENT) {
             timeout(5) { // wait for other branch ... but no more than 5 minutes to avoid deadlock
                 print 'STRIP_NODE_LOG_STOP'
                 start += 1
@@ -475,6 +474,8 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
         logparser.archiveLogsWithBranchInfo('branch4WithDuplicates.txt', [ filter: ['branch4'], mergeNestedDuplicates: false ])
         print 'after parsing and archiving branch4WithDuplicates.txt'
     }
+
+    // TODO check content of logs archived
 
     // 2/ access logs programmatically using various options
 
@@ -1132,7 +1133,7 @@ def testLogparser() {
     // add VT100 marker + test parsing of node step
 
     // node with label
-    node(LABEL_LINUX) {
+    node(LABEL_TEST_AGENT) {
     }
 
     // empty node
@@ -1168,7 +1169,7 @@ def testManyThreads(nbthread, nbloop, nbsubloop) {
         def id = it
         def threadName = "parallel_${id}".toString()
         torun[threadName] = {
-            node(LABEL_LINUX) {
+            node(LABEL_TEST_AGENT) {
                 nbloop.times {
                     def str = ''
                     def it1 = it+1
@@ -1217,9 +1218,9 @@ def testThreadsWithNodes(label, nbthread) {
 testLogparser()
 testCompletedJobs()
 // test with less nodes than executor
-testThreadsWithNodes(LABEL_LINUX, 2)
+testThreadsWithNodes(LABEL_TEST_AGENT, 2)
 // same with more than executors available
-testThreadsWithNodes(LABEL_LINUX, 20)
+testThreadsWithNodes(LABEL_TEST_AGENT, 20)
 if (RUN_MANYTHREAD_TIMING_TEST) {
     testManyThreads(50,20,500)
 }

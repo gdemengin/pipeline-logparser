@@ -1,3 +1,4 @@
 import jenkins.model.*
 Jenkins.instance.setNumExecutors(4)
-Jenkins.instance.setLabelString('linux')
+// todo: use separate agent from master
+Jenkins.instance.setLabelString('test-agent')

@@ -19,9 +19,10 @@ while [ $# -gt 0 ]; do
 done
 
 cd $(dirname $0)
+IMAGE_NAME=$(basename $(dirname $0))
 
-docker build -t jenkins-last .
+docker build -t ${IMAGE_NAME} .
 export GITHUB_WORKSPACE=/workspace
 export GITHUB_SHA=$(git rev-parse --verify HEAD)
 
-docker run -it --rm -e GITHUB_SHA -e GITHUB_WORKSPACE -v "$(pwd -P)/../../":"/workspace" -it ${PORT_ARG} jenkins-last ${KEEPALIVE_ARG}
+docker run -it --rm -e GITHUB_SHA -e GITHUB_WORKSPACE -v "$(pwd -P)/../../":"/workspace" -it ${PORT_ARG} ${IMAGE_NAME} ${KEEPALIVE_ARG}

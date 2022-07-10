@@ -15,6 +15,7 @@ RUN apt-get update \
      wget \
      procps \
      psmisc \
+     libxml-xpath-perl \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 

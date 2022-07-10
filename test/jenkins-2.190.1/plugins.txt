@@ -91,7 +91,6 @@ junit:1.29
 kubernetes:1.24.1
 kubernetes-client-api:4.9.1-1
 kubernetes-credentials:0.6.2
-kubernetes-credentials-provider:0.15
 kubernetes-pipeline-devops-steps:1.6
 ldap:1.25
 lockable-resources:2.10

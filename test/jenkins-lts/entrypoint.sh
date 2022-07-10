@@ -54,6 +54,9 @@ function create_local_repo() {
     local SHA=${GITHUB_SHA}
     local DST=${GITHUB_WORKSPACE}/.tmp-test
 
+    echo ""
+    echo "building local git repository from ${SRC}"
+
     rm -rf ${DST}
     git clone file://${SRC} ${DST}
     cd ${DST}
@@ -90,8 +93,8 @@ function wait_and_clean() {
     clean
 }
 
+echo testing commit GITHUB_SHA=${GITHUB_SHA}
 create_local_repo
-echo GITHUB_SHA=${GITHUB_SHA}
 
 cd /
 
