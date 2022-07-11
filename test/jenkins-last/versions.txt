@@ -107,5 +107,5 @@ Plugins :
 	Pipeline: Multibranch (workflow-multibranch) v716.vc692a_e52371b_
 	Pipeline: SCM Step (workflow-scm-step) v400.v6b_89a_1317c9a_
 	Pipeline: Step API (workflow-step-api) v625.vd896b_f445a_f8
-	Pipeline: Supporting APIs (workflow-support) v827.v7ef666c4d65c
+	Pipeline: Supporting APIs (workflow-support) v833.va_1c71061486b_
 	Workspace Cleanup Plugin (ws-cleanup) v0.42
