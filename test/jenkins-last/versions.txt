@@ -1,4 +1,4 @@
-Jenkins Instance Version : 2.346.1
+Jenkins Instance Version : 2.346.2
 Plugins : 
 	JavaScript GUI Lib: ACE Editor bundle plugin (ace-editor) v1.1
 	Ant Plugin (ant) v475.vf34069fef73c
@@ -47,7 +47,7 @@ Plugins :
 	GitHub plugin (github) v1.34.4
 	GitHub API Plugin (github-api) v1.303-400.v35c2d8258028
 	GitHub Branch Source Plugin (github-branch-source) v1656.v77eddb_b_e95df
-	Gradle Plugin (gradle) v1.39.3
+	Gradle Plugin (gradle) v1.39.4
 	JavaScript GUI Lib: Handlebars bundle plugin (handlebars) v3.0.8
 	Handy Uri Templates 2.x API Plugin (handy-uri-templates-2-api) v2.1.8-22.v77d5b_75e6953
 	HTML Publisher plugin (htmlpublisher) v1.30
@@ -91,19 +91,19 @@ Plugins :
 	SnakeYAML API Plugin (snakeyaml-api) v1.30.2-76.vc104f7ce9870
 	Server Sent Events (SSE) Gateway Plugin (sse-gateway) v1.25
 	SSH Credentials Plugin (ssh-credentials) v291.v8211e4f8efb_c
-	SSH Build Agents plugin (ssh-slaves) v1.821.vd834f8a_c390e
+	SSH Build Agents plugin (ssh-slaves) v1.834.v622da_57f702c
 	SSH server (sshd) v3.0.3
 	Structs Plugin (structs) v318.va_f3ccb_729b_71
 	Timestamper (timestamper) v1.18
 	Token Macro Plugin (token-macro) v293.v283932a_0a_b_49
-	Trilead API Plugin (trilead-api) v1.57.v6e90e07157e1
+	Trilead API Plugin (trilead-api) v1.67.vc3938a_35172f
 	Variant Plugin (variant) v1.4
 	Pipeline (workflow-aggregator) v590.v6a_d052e5a_a_b_5
 	Pipeline: API (workflow-api) v1188.v0016b_4f29881
 	Pipeline: Basic Steps (workflow-basic-steps) v969.vc4ec3e4854b_f
 	Pipeline: Groovy (workflow-cps) v2746.v0da_83a_332669
 	Pipeline: Nodes and Processes (workflow-durable-task-step) v1174.v73a_9a_17edce0
-	Pipeline: Job (workflow-job) v1203.v7b_7023424efe
+	Pipeline: Job (workflow-job) v1207.ve6191ff089f8
 	Pipeline: Multibranch (workflow-multibranch) v716.vc692a_e52371b_
 	Pipeline: SCM Step (workflow-scm-step) v400.v6b_89a_1317c9a_
 	Pipeline: Step API (workflow-step-api) v625.vd896b_f445a_f8
