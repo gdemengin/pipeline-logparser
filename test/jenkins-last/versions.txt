@@ -1,111 +1,113 @@
-Jenkins Instance Version : 2.346.1
+Jenkins Instance Version : 2.346.3
 Plugins : 
 	JavaScript GUI Lib: ACE Editor bundle plugin (ace-editor) v1.1
 	Ant Plugin (ant) v475.vf34069fef73c
 	OWASP Markup Formatter Plugin (antisamy-markup-formatter) v2.7
-	Apache HttpComponents Client 4.x API Plugin (apache-httpcomponents-client-4-api) v4.5.13-1.0
+	Apache HttpComponents Client 4.x API Plugin (apache-httpcomponents-client-4-api) v4.5.13-138.v4e7d9a_7b_a_e61
 	Authentication Tokens API Plugin (authentication-tokens) v1.4
-	Blue Ocean (blueocean) v1.25.5
+	Blue Ocean (blueocean) v1.25.6
 	Autofavorite for Blue Ocean (blueocean-autofavorite) v1.2.5
-	Bitbucket Pipeline for Blue Ocean (blueocean-bitbucket-pipeline) v1.25.5
-	Common API for Blue Ocean (blueocean-commons) v1.25.5
-	Config API for Blue Ocean (blueocean-config) v1.25.5
-	Blue Ocean Core JS (blueocean-core-js) v1.25.5
-	Dashboard for Blue Ocean (blueocean-dashboard) v1.25.5
+	Bitbucket Pipeline for Blue Ocean (blueocean-bitbucket-pipeline) v1.25.6
+	Common API for Blue Ocean (blueocean-commons) v1.25.6
+	Config API for Blue Ocean (blueocean-config) v1.25.6
+	Blue Ocean Core JS (blueocean-core-js) v1.25.6
+	Dashboard for Blue Ocean (blueocean-dashboard) v1.25.6
 	Display URL for Blue Ocean (blueocean-display-url) v2.4.1
-	Events API for Blue Ocean (blueocean-events) v1.25.5
-	Git Pipeline for Blue Ocean (blueocean-git-pipeline) v1.25.5
-	GitHub Pipeline for Blue Ocean (blueocean-github-pipeline) v1.25.5
-	i18n for Blue Ocean (blueocean-i18n) v1.25.5
-	JWT for Blue Ocean (blueocean-jwt) v1.25.5
-	Personalization for Blue Ocean (blueocean-personalization) v1.25.5
-	Pipeline implementation for Blue Ocean (blueocean-pipeline-api-impl) v1.25.5
-	Blue Ocean Pipeline Editor (blueocean-pipeline-editor) v1.25.5
-	Pipeline SCM API for Blue Ocean (blueocean-pipeline-scm-api) v1.25.5
-	REST API for Blue Ocean (blueocean-rest) v1.25.5
-	REST Implementation for Blue Ocean (blueocean-rest-impl) v1.25.5
-	Web for Blue Ocean (blueocean-web) v1.25.5
-	Bootstrap 5 API Plugin (bootstrap5-api) v5.1.3-7
+	Events API for Blue Ocean (blueocean-events) v1.25.6
+	Git Pipeline for Blue Ocean (blueocean-git-pipeline) v1.25.6
+	GitHub Pipeline for Blue Ocean (blueocean-github-pipeline) v1.25.6
+	i18n for Blue Ocean (blueocean-i18n) v1.25.6
+	JWT for Blue Ocean (blueocean-jwt) v1.25.6
+	Personalization for Blue Ocean (blueocean-personalization) v1.25.6
+	Pipeline implementation for Blue Ocean (blueocean-pipeline-api-impl) v1.25.6
+	Blue Ocean Pipeline Editor (blueocean-pipeline-editor) v1.25.6
+	Pipeline SCM API for Blue Ocean (blueocean-pipeline-scm-api) v1.25.6
+	REST API for Blue Ocean (blueocean-rest) v1.25.6
+	REST Implementation for Blue Ocean (blueocean-rest-impl) v1.25.6
+	Web for Blue Ocean (blueocean-web) v1.25.6
+	Bootstrap 5 API Plugin (bootstrap5-api) v5.2.0-1
 	bouncycastle API Plugin (bouncycastle-api) v2.25
 	Branch API Plugin (branch-api) v2.1046.v0ca_37783ecc5
 	Build Timeout (build-timeout) v1.21
 	Caffeine API Plugin (caffeine-api) v2.9.3-65.v6a_47d0f4d1fe
-	Checks API plugin (checks-api) v1.7.4
-	Bitbucket Branch Source Plugin (cloudbees-bitbucket-branch-source) v773.v4b_9b_005b_562b_
-	Folders Plugin (cloudbees-folder) v6.729.v2b_9d1a_74d673
+	Checks API plugin (checks-api) v1.7.5
+	Bitbucket Branch Source Plugin (cloudbees-bitbucket-branch-source) v785.ve724eb_44e286
+	Folders Plugin (cloudbees-folder) v6.740.ve4f4ffa_dea_54
 	Command Agent Launcher Plugin (command-launcher) v1.2
 	Credentials Plugin (credentials) v1139.veb_9579fca_33b_
 	Credentials Binding Plugin (credentials-binding) v523.vd859a_4b_122e6
 	Display URL API (display-url-api) v2.3.6
-	Durable Task Plugin (durable-task) v496.va67c6f9eefa7
+	Durable Task Plugin (durable-task) v500.v8927d9fd99d8
 	ECharts API Plugin (echarts-api) v5.3.3-1
-	Email Extension Plugin (email-ext) v2.89
+	Email Extension Plugin (email-ext) v2.91
 	Favorite (favorite) v2.4.1
-	Font Awesome API Plugin (font-awesome-api) v6.1.1-1
-	Git plugin (git) v4.11.3
-	Git client plugin (git-client) v3.11.0
-	GitHub plugin (github) v1.34.4
+	Font Awesome API Plugin (font-awesome-api) v6.1.2-1
+	Git plugin (git) v4.11.4
+	Git client plugin (git-client) v3.11.2
+	GitHub plugin (github) v1.34.5
 	GitHub API Plugin (github-api) v1.303-400.v35c2d8258028
-	GitHub Branch Source Plugin (github-branch-source) v1656.v77eddb_b_e95df
-	Gradle Plugin (gradle) v1.39.3
+	GitHub Branch Source Plugin (github-branch-source) v1677.v731f745ea_0cf
+	Gradle Plugin (gradle) v1.39.4
 	JavaScript GUI Lib: Handlebars bundle plugin (handlebars) v3.0.8
 	Handy Uri Templates 2.x API Plugin (handy-uri-templates-2-api) v2.1.8-22.v77d5b_75e6953
 	HTML Publisher plugin (htmlpublisher) v1.30
 	Jackson 2 API Plugin (jackson2-api) v2.13.3-285.vc03c0256d517
-	JavaBeans Activation Framework (JAF) API (javax-activation-api) v1.2.0-3
-	JavaMail API (javax-mail-api) v1.6.2-6
+	Jakarta Activation API (jakarta-activation-api) v2.0.1-1
+	Jakarta Mail API (jakarta-mail-api) v2.0.1-1
+	JavaBeans Activation Framework (JAF) API (javax-activation-api) v1.2.0-4
+	JavaMail API (javax-mail-api) v1.6.2-5
 	JAXB plugin (jaxb) v2.3.6-1
 	JDK Tool Plugin (jdk-tool) v1.0
-	Design Language (jenkins-design-language) v1.25.5
+	Design Language (jenkins-design-language) v1.25.6
 	Java JSON Web Token (JJWT) Plugin (jjwt-api) v0.11.5-77.v646c772fddb_0
 	JQuery3 API Plugin (jquery3-api) v3.6.0-4
-	JSch dependency plugin (jsch) v0.1.55.2
+	JSch dependency plugin (jsch) v0.1.55.61.va_e9ee26616e7
 	JUnit Plugin (junit) v1119.1121.vc43d0fc45561
-	LDAP Plugin (ldap) v2.10
-	Mailer Plugin (mailer) v414.vcc4c33714601
+	LDAP Plugin (ldap) v2.11
+	Mailer Plugin (mailer) v435.v79ef3972b_5c7
 	Matrix Authorization Strategy Plugin (matrix-auth) v3.1.5
 	Matrix Project Plugin (matrix-project) v772.v494f19991984
 	JavaScript GUI Lib: Moment.js bundle plugin (momentjs) v1.1.1
-	OkHttp Plugin (okhttp-api) v4.9.3-105.vb96869f8ac3a
-	PAM Authentication plugin (pam-auth) v1.8
+	OkHttp Plugin (okhttp-api) v4.9.3-108.v0feda04578cf
+	PAM Authentication plugin (pam-auth) v1.10
 	Pipeline: Build Step (pipeline-build-step) v2.18
 	Pipeline: GitHub Groovy Libraries (pipeline-github-lib) v38.v445716ea_edda_
 	Pipeline Graph Analysis Plugin (pipeline-graph-analysis) v195.v5812d95a_a_2f9
-	Pipeline: Groovy Libraries (pipeline-groovy-lib) v593.va_a_fc25d520e9
+	Pipeline: Groovy Libraries (pipeline-groovy-lib) v612.v84da_9c54906d
 	Pipeline: Input Step (pipeline-input-step) v449.v77f0e8b_845c4
 	Pipeline: Milestone Step (pipeline-milestone-step) v101.vd572fef9d926
-	Pipeline: Model API (pipeline-model-api) v2.2097.v33db_b_de764b_e
-	Pipeline: Declarative (pipeline-model-definition) v2.2097.v33db_b_de764b_e
-	Pipeline: Declarative Extension Points API (pipeline-model-extensions) v2.2097.v33db_b_de764b_e
+	Pipeline: Model API (pipeline-model-api) v2.2114.v2654ca_721309
+	Pipeline: Declarative (pipeline-model-definition) v2.2114.v2654ca_721309
+	Pipeline: Declarative Extension Points API (pipeline-model-extensions) v2.2114.v2654ca_721309
 	Pipeline: REST API Plugin (pipeline-rest-api) v2.24
 	Pipeline: Stage Step (pipeline-stage-step) v293.v200037eefcd5
-	Pipeline: Stage Tags Metadata (pipeline-stage-tags-metadata) v2.2097.v33db_b_de764b_e
+	Pipeline: Stage Tags Metadata (pipeline-stage-tags-metadata) v2.2114.v2654ca_721309
 	Pipeline: Stage View Plugin (pipeline-stage-view) v2.24
-	Plain Credentials Plugin (plain-credentials) v1.8
+	Plain Credentials Plugin (plain-credentials) v139.ved2b_9cf7587b
 	Plugin Utilities API Plugin (plugin-util-api) v2.17.0
 	Popper.js 2 API Plugin (popper2-api) v2.11.5-2
 	Pub-Sub "light" Bus (pubsub-light) v1.16
 	Resource Disposer Plugin (resource-disposer) v0.19
-	SCM API Plugin (scm-api) v608.vfa_f971c5a_a_e9
+	SCM API Plugin (scm-api) v621.vda_a_b_055e58f7
 	Script Security Plugin (script-security) v1175.v4b_d517d6db_f0
 	SnakeYAML API Plugin (snakeyaml-api) v1.30.2-76.vc104f7ce9870
 	Server Sent Events (SSE) Gateway Plugin (sse-gateway) v1.25
-	SSH Credentials Plugin (ssh-credentials) v291.v8211e4f8efb_c
-	SSH Build Agents plugin (ssh-slaves) v1.821.vd834f8a_c390e
+	SSH Credentials Plugin (ssh-credentials) v295.vced876c18eb_4
+	SSH Build Agents plugin (ssh-slaves) v1.834.v622da_57f702c
 	SSH server (sshd) v3.0.3
-	Structs Plugin (structs) v318.va_f3ccb_729b_71
+	Structs Plugin (structs) v324.va_f5d6774f3a_d
 	Timestamper (timestamper) v1.18
-	Token Macro Plugin (token-macro) v293.v283932a_0a_b_49
-	Trilead API Plugin (trilead-api) v1.57.v6e90e07157e1
-	Variant Plugin (variant) v1.4
+	Token Macro Plugin (token-macro) v308.v4f2b_ed62b_b_16
+	Trilead API Plugin (trilead-api) v1.67.vc3938a_35172f
+	Variant Plugin (variant) v59.vf075fe829ccb
 	Pipeline (workflow-aggregator) v590.v6a_d052e5a_a_b_5
-	Pipeline: API (workflow-api) v1188.v0016b_4f29881
-	Pipeline: Basic Steps (workflow-basic-steps) v969.vc4ec3e4854b_f
-	Pipeline: Groovy (workflow-cps) v2746.v0da_83a_332669
-	Pipeline: Nodes and Processes (workflow-durable-task-step) v1174.v73a_9a_17edce0
-	Pipeline: Job (workflow-job) v1203.v7b_7023424efe
+	Pipeline: API (workflow-api) v1192.v2d0deb_19d212
+	Pipeline: Basic Steps (workflow-basic-steps) v991.v43d80fea_ff66
+	Pipeline: Groovy (workflow-cps) v2759.v87459c4eea_ca_
+	Pipeline: Nodes and Processes (workflow-durable-task-step) v1199.v02b_9244f8064
+	Pipeline: Job (workflow-job) v1207.ve6191ff089f8
 	Pipeline: Multibranch (workflow-multibranch) v716.vc692a_e52371b_
 	Pipeline: SCM Step (workflow-scm-step) v400.v6b_89a_1317c9a_
-	Pipeline: Step API (workflow-step-api) v625.vd896b_f445a_f8
-	Pipeline: Supporting APIs (workflow-support) v833.va_1c71061486b_
+	Pipeline: Step API (workflow-step-api) v639.v6eca_cd8c04a_a_
+	Pipeline: Supporting APIs (workflow-support) v838.va_3a_087b_4055b
 	Workspace Cleanup Plugin (ws-cleanup) v0.42
