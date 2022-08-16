@@ -32,7 +32,7 @@ Tested with:
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@3.1.3') _
+@Library('pipeline-logparser@3.2') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
 * _it may be different on your instance_
@@ -48,7 +48,7 @@ def mylog = logparser.getLogsWithBranchInfo()
 
 ### Detailed Documentation
 
-see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/3.1.3/vars/logparser.txt)  
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/3.2/vars/logparser.txt)  
 * _also available in $JOB_URL/pipeline-syntax/globals#logparser_
   * _visible only after the library has been imported once_
   * _requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity_
@@ -247,6 +247,25 @@ functionalities:
   not in any branch
   [branch1] in branch1
   [branch2] in branch2
+  ```
+
+- write logs directly to a file
+  ```
+  echo 'not in any branch'
+  parallel (
+    branch1: { echo 'in branch1' },
+    branch2: { echo 'in branch2' }
+  )
+  node('myhost') {
+    logparser.writeLogsWithBranchInfo(env.NODE_NAME, "${pwd()}/logs.txt")
+  }
+  ```
+  result: log.txt in workspace on node 'myhost' with content:
+  ```
+  not in any branch
+  [branch1] in branch1
+  [branch2] in branch2
+  Running on myhost in /home/jenkins/workspace/test-pipeline
   ```
 
 - filter branch logs with option `filter=[ list of branches to keep ]`
@@ -557,6 +576,7 @@ Note:
 ## Known limitations <a name="limitations"></a>
 
 * calls to `logparser.getLogsWithBranchInfo()` may fail (and cause job to fail) when log is too big (millions of lines, hundreds of MB of logs) because of a lack of heap space
+workarround: use `logparser.writeLogswithBranchInfo` to write logs directly in a file (in node workspace) or `logparser.archiveLogsWithBranchInfo()` to write them directly in run artifacts
 
 * logs of nested stages (stage inside stage) are not correctly handled in Blue Ocean (Blue Ocean limitation)
 
@@ -645,3 +665,6 @@ Note:
 
 * 3.1.3 (06/2022)
   - fix parsing of completed jobs #16
+
+* 3.2 (08/2022)
+  - add function to write directly to a file #21

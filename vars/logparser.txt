@@ -91,13 +91,15 @@
         </dd>
         <dt>
             <b><code>String getLogsWithBranchInfo(java.util.LinkedHashMap options = [:], RunWrapper build = currentBuild)</code></b><br>
-            <br>
-            <b><code>void archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])</code></b>
+            <b><code>void archiveLogsWithBranchInfo(String name, java.util.LinkedHashMap options = [:])</code></b><br>
+            <b><code>void writeLogsWithBranchInfo(hudson.FilePath filePath, java.util.LinkedHashMap options = [:], build = currentBuild)</code></b><br>
+            <b><code>void writeLogsWithBranchInfo(String node, String path, java.util.LinkedHashMap options = [:], build = currentBuild)</code></b><br>
         </dt>
         <dd>
             <p>
                 get logs with branch name on each branch line<br>
                 or archive them in run artifacts<br>
+                or write them in a file on one of the nodes<br>
                 <br>
                 available options:
                 <ul>
@@ -282,6 +284,26 @@
                             &nbsp;&nbsp;not in any branch<br>
                             &nbsp;&nbsp;[branch1] in branch1<br>
                             &nbsp;&nbsp;[branch2] in branch2<br>
+                        </code><br>
+                    </li>
+                    <li>
+                        <b>write logs directly to a file</b><br>
+                        <code><br>
+                            &nbsp;&nbsp;echo 'not in any branch'<br>
+                            &nbsp;&nbsp;parallel (<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;branch1: { echo 'in branch1' },<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;branch2: { echo 'in branch2' }<br>
+                            &nbsp;&nbsp;)<br>
+                            &nbsp;&nbsp;node('myhost') {<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;logparser.writeLogsWithBranchInfo(env.NODE_NAME, "${pwd()}/logs.txt")<br>
+                            &nbsp;&nbsp;}<br>
+                        </code><br>
+                        result: logs.txt in workspace on node 'myhost' with content:<br>
+                        <code><br>
+                            &nbsp;&nbsp;not in any branch<br>
+                            &nbsp;&nbsp;[branch1] in branch1<br>
+                            &nbsp;&nbsp;[branch2] in branch2<br>
+                            &nbsp;&nbsp;Running on myhost in /home/jenkins/workspace/test-pipeline<br>
                         </code><br>
                     </li>
                     <li>
