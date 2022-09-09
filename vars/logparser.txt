@@ -513,7 +513,7 @@
                         <b><code>id</code></b> : the id of the step
                     </li>
                     <li>
-                        <b><code>name</code></b> : the name of the step if it is the start of a branch or a stage (null otherwise)
+                        <b><code>name</code></b> : the name of the step if it is the start of a branch or a stage (absent otherwise)
                     </li>
                     <li>
                         <b><code>stage</code></b> : true if the step is the start of a stage
@@ -531,13 +531,16 @@
                         <b><code>url</code></b> : url of the step in Pipeline Steps view
                     </li>
                     <li>
-                        <b><code>log</code></b> : url to the logs (null if no log)
+                        <b><code>log</code></b> : url to the logs (absent if no logs)
                     </li>
                     <li>
-                        <b><code>label</code></b> : label used for node/agent steps (null if no label used)
+                        <b><code>wfapiLog</code></b> : url to the REST API logs (absent if no logs)
                     </li>
                     <li>
-                        <b><code>host</code></b> : hostname used for node/agent steps
+                        <b><code>label</code></b> : label used for node/agent steps (if applicable)
+                    </li>
+                    <li>
+                        <b><code>host</code></b> : hostname used for node/agent steps (if applicable)
                     </li>
                 </ul>
                 examples<br>

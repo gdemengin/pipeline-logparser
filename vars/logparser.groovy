@@ -306,7 +306,7 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
             url: url
         ]
         if (it.haslog) {
-            item += [ log: "${url}log" ]
+            item += [ log: "${url}log", wfapiLog: "${url}wfapi/log" ]
         }
         if (it.name) {
             item += [ name: it.name ]
