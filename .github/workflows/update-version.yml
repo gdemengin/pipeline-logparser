@@ -1,6 +1,9 @@
+# update version of jenkins plugins
+# daily (on branch update-version)
+
 on:
   schedule:
-    - cron:  '0 19 * * 1'
+    - cron:  '0 19 * * *'
   workflow_dispatch:
 
 jobs:
@@ -23,12 +26,18 @@ jobs:
           else
               echo "jenkins_last_changed=true" >> ${GITHUB_ENV}
               git diff
+              git config --global user.name 'logparser-action'
+              git config --global user.email 'logparser-action@users.noreply.github.com'
+              git add ./test/jenkins-last README.md
+              git commit -m "[bot] Update last good jenkins version tested"
           fi
       - name: push last good version
         if: github.event_name != 'pull_request' && env.jenkins_last_changed == 'true'
         run: |
-          git config --global user.name 'logparser-action'
-          git config --global user.email 'logparser-action@users.noreply.github.com'
-          git add ./test/jenkins-last README.md
-          git commit -m "[bot] Update last good jenkins version tested"
-          git push
+          if [ "${GITHUB_REF}" == "refs/heads/main" ]; then
+            git fetch
+            git checkout -B update-version
+            git push --force-with-lease --set-upstream origin update-version
+          else
+            git push
+          fi
