@@ -754,10 +754,10 @@ def parseLogs(expectedLogMap, expectedLogMapWithoutStages, expectedLogMapWithDup
     checkBranchLogs(extractMainLogs(logsNoBranchWithoutStages, begin, end), 'null', expectedLogMapWithoutStages.'null')
     checkBranchLogs(logsS2b1WithoutStages, 's2b1', expectedBranchLogs(expectedLogMapWithoutStages, 's2b1', '[s2b1] '))
     checkBranchLogs(logsS2b2WithoutStages, 's2b2', expectedBranchLogs(expectedLogMapWithoutStages, 's2b2', '[s2b2] '))
-    checkBranchLogs(logsBranch4WithDuplicates, 'branch4', expectedBranchLogs(expectedLogMapWithDuplicates, 'branch4', '[branch4] [branch4] '))
+    checkBranchLogs(logsBranch4WithDuplicates, 'branch4WithDuplicates', expectedBranchLogs(expectedLogMapWithDuplicates, 'branch4', '[branch4] [branch4] '))
 
-    checkBranchLogs(logsBranch1InBranch2, 'branch1', expectedBranchLogs(expectedLogMap, 'branch2.branch1', '[branch2] [branch1] '))
-    checkBranchLogs(logsBranch1InAny, 'branch1', expectedBranchLogs(expectedLogMap, 'branch2.branch1', '[branch2] [branch1] '))
+    checkBranchLogs(logsBranch1InBranch2, 'branch1InBranch2', expectedBranchLogs(expectedLogMap, 'branch2.branch1', '[branch2] [branch1] '))
+    checkBranchLogs(logsBranch1InAny, 'branch1InAny', expectedBranchLogs(expectedLogMap, 'branch2.branch1', '[branch2] [branch1] '))
 
     // check full logs
     print 'checking fullLog contain the same lines as each branch (different order)'
@@ -927,120 +927,120 @@ def printUrls(check) {
                     it.findAll{ it.id == parent }.each{
                         if (it.name != null || it.parent == null) {
                             found = true
-                            assert it.name == exp
+                            assert it.name == exp, "${it.name} ${exp}"
                         } else {
                             parent = it.parent
                         }
                     }
                 }
             }
-
-            // test getBranches
-            def getBranches = logparser.getBranches()
-            def getBranchesWithDuplicates = logparser.getBranches([ mergeNestedDuplicates: false ])
-            def getBranchesWithoutStages = logparser.getBranches([ showStages: false ])
-            def getBranch21 = logparser.getBranches([ filter: [ 'branch21' ] ])
-            def getBranch1 = logparser.getBranches([ filter: [ 'branch1' ] ])
-            def getNestedBranch1 = logparser.getBranches([ filter: [ [ '.*', 'branch1' ] ] ])
-            def getBranch0And2 = logparser.getBranches([ filter: [ 'branch0', 'branch2' ] ])
-
-            assert getBranches == [
-                [null],
-                ['branch0'],
-                ['branch1'],
-                ['branch2'],
-                ['branch2', 'branch21'],
-                ['branch2', 'branch22'],
-                ['branch2', 'branch1'],
-                ['branch3'],
-                ['branch4'],
-                ['init'],
-                ['empty'],
-                ['endl'],
-                ['main'],
-                ['main', 'build'],
-                ['main', 'test'],
-                ['one'],
-                ['two'],
-                ['stage1'],
-                ['stage2'],
-                ['stage2', 'stage3'],
-                ['stage2', 's2b1'],
-                ['stage2', 's2b2'],
-                ['notimestamp'],
-                ['timestamp']
-            ], getBranches
-
-            assert getBranchesWithDuplicates == [
-                [null],
-                ['branch0'],
-                ['branch1'],
-                ['branch2'],
-                ['branch2', 'branch21'],
-                ['branch2', 'branch22'],
-                ['branch2', 'branch1'],
-                ['branch3'],
-                ['branch4'],
-                ['branch4', 'branch4'],
-                ['init'],
-                ['empty'],
-                ['endl'],
-                ['main'],
-                ['main', 'build'],
-                ['main', 'test'],
-                ['one'],
-                ['two'],
-                ['stage1'],
-                ['stage2'],
-                ['stage2', 'stage3'],
-                ['stage2', 's2b1'],
-                ['stage2', 's2b2'],
-                ['notimestamp'],
-                ['timestamp']
-            ], getBranchesWithDuplicates
-
-            assert getBranchesWithoutStages == [
-                [null],
-                ['branch0'],
-                ['branch1'],
-                ['branch2'],
-                ['branch2', 'branch21'],
-                ['branch2', 'branch22'],
-                ['branch2', 'branch1'],
-                ['branch3'],
-                ['branch4'],
-                ['init'],
-                ['empty'],
-                ['endl'],
-                ['main'],
-                ['main', 'build'],
-                ['main', 'test'],
-                ['one'],
-                ['two'],
-                ['s2b1'],
-                ['s2b2'],
-                ['notimestamp'],
-                ['timestamp']
-            ], getBranchesWithoutStages
-
-            assert getBranch21 == [
-                ['branch2', 'branch21']
-            ], getBranch21
-
-            assert getBranch1 == [
-                ['branch1'],
-                ['branch2', 'branch1']
-            ], getBranch1
-
-            assert getNestedBranch1 == [
-                ['branch2', 'branch1']
-            ], getNestedBranch1
-
-            assert getBranch0And2 == [
-                ['branch0'],
-                ['branch2']
-            ], getBranch0And2
         }
+
+        // test getBranches
+        def getBranches = logparser.getBranches()
+        def getBranchesWithDuplicates = logparser.getBranches([ mergeNestedDuplicates: false ])
+        def getBranchesWithoutStages = logparser.getBranches([ showStages: false ])
+        def getBranch21 = logparser.getBranches([ filter: [ 'branch21' ] ])
+        def getBranch1 = logparser.getBranches([ filter: [ 'branch1' ] ])
+        def getNestedBranch1 = logparser.getBranches([ filter: [ [ '.*', 'branch1' ] ] ])
+        def getBranch0And2 = logparser.getBranches([ filter: [ 'branch0', 'branch2' ] ])
+
+        assert getBranches == [
+            [null],
+            ['branch0'],
+            ['branch1'],
+            ['branch2'],
+            ['branch2', 'branch21'],
+            ['branch2', 'branch22'],
+            ['branch2', 'branch1'],
+            ['branch3'],
+            ['branch4'],
+            ['init'],
+            ['empty'],
+            ['endl'],
+            ['main'],
+            ['main', 'build'],
+            ['main', 'test'],
+            ['one'],
+            ['two'],
+            ['stage1'],
+            ['stage2'],
+            ['stage2', 'stage3'],
+            ['stage2', 's2b1'],
+            ['stage2', 's2b2'],
+            ['notimestamp'],
+            ['timestamp']
+        ], getBranches
+
+        assert getBranchesWithDuplicates == [
+            [null],
+            ['branch0'],
+            ['branch1'],
+            ['branch2'],
+            ['branch2', 'branch21'],
+            ['branch2', 'branch22'],
+            ['branch2', 'branch1'],
+            ['branch3'],
+            ['branch4'],
+            ['branch4', 'branch4'],
+            ['init'],
+            ['empty'],
+            ['endl'],
+            ['main'],
+            ['main', 'build'],
+            ['main', 'test'],
+            ['one'],
+            ['two'],
+            ['stage1'],
+            ['stage2'],
+            ['stage2', 'stage3'],
+            ['stage2', 's2b1'],
+            ['stage2', 's2b2'],
+            ['notimestamp'],
+            ['timestamp']
+        ], getBranchesWithDuplicates
+
+        assert getBranchesWithoutStages == [
+            [null],
+            ['branch0'],
+            ['branch1'],
+            ['branch2'],
+            ['branch2', 'branch21'],
+            ['branch2', 'branch22'],
+            ['branch2', 'branch1'],
+            ['branch3'],
+            ['branch4'],
+            ['init'],
+            ['empty'],
+            ['endl'],
+            ['main'],
+            ['main', 'build'],
+            ['main', 'test'],
+            ['one'],
+            ['two'],
+            ['s2b1'],
+            ['s2b2'],
+            ['notimestamp'],
+            ['timestamp']
+        ], getBranchesWithoutStages
+
+        assert getBranch21 == [
+            ['branch2', 'branch21']
+        ], getBranch21
+
+        assert getBranch1 == [
+            ['branch1'],
+            ['branch2', 'branch1']
+        ], getBranch1
+
+        assert getNestedBranch1 == [
+            ['branch2', 'branch1']
+        ], getNestedBranch1
+
+        assert getBranch0And2 == [
+            ['branch0'],
+            ['branch2']
+        ], getBranch0And2
     }
 
     def str = ''
@@ -1216,7 +1216,8 @@ def testWriteToFile() {
         def expected = logparser.getLogsWithBranchInfo()
 
         logparser.writeLogsWithBranchInfo(env.NODE_NAME, "${pwd()}/logs_write.txt")
-        assert readFile('logs_write.txt') == expected
+        def buffer = readFile('logs_write.txt')
+        assert buffer == expected, "'''\n${buffer}''' != '''\n${expected}'''"
     }
 }
 

@@ -64,8 +64,10 @@ java.util.LinkedHashMap _getFlowGraphMap(build) {
     def start = null
     flowGraph.nodes.each {
         if (it.enclosingId != null) {
-            flowGraphMap[it.enclosingId].children.add(it)
-            flowGraphMap[it.id] += _getNodeInfos(it)
+            flowGraphMap[it.enclosingId].children.add(it.id)
+
+            def infos = _getNodeInfos(it)
+            flowGraphMap[it.id] += infos
         }
         else if (it.class != org.jenkinsci.plugins.workflow.graph.FlowEndNode) {
             // https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/graph/FlowNode.html#getEnclosingId--
@@ -90,13 +92,15 @@ java.util.LinkedHashMap _getNodeInfos(node) {
             if (labelAction.size() == 1) {
                 infos += [ name: labelAction[0].threadName, isBranch: true ]
             }
-        } else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.StageStep$DescriptorImpl) {
+        }
+        else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.StageStep$DescriptorImpl) {
             def labelAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.actions.LabelAction }
             assert labelAction.size() == 1 || labelAction.size() == 0
             if (labelAction.size() == 1) {
-                infos += [ name: labelAction[0].displayName, isStage: true, isBranch: true ]
+                infos += [ name: labelAction[0].displayName, isStage: true ]
             }
-        } else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.ExecutorStep$DescriptorImpl && node.displayName=='Allocate node : Start') {
+        }
+        else if (node.descriptor instanceof org.jenkinsci.plugins.workflow.support.steps.ExecutorStep$DescriptorImpl && node.displayName=='Allocate node : Start') {
             def argAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.cps.actions.ArgumentsActionImpl }
             assert argAction.size() == 1 || argAction.size() == 0
             // record the label if any
@@ -107,9 +111,9 @@ java.util.LinkedHashMap _getNodeInfos(node) {
             def wsAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.support.actions.WorkspaceActionImpl }
             // hostname may be missing if host not yet allocated
             assert wsAction.size() == 1 || wsAction.size() == 0
-            // record hostname if any
+            // record host if any
             if (wsAction.size() == 1) {
-                infos += [ hostname: wsAction[0].node ]
+                infos += [ host: wsAction[0].node ]
             }
         }
     }
@@ -117,7 +121,7 @@ java.util.LinkedHashMap _getNodeInfos(node) {
 }
 
 @NonCPS
-java.util.LinkedHashMap _getNodeTree(build, _flowGraphMap = null, _node = null) {
+java.util.LinkedHashMap _getNodeTree(build, _flowGraphMap = null, nodeId = null) {
     def key=build.getFullDisplayName()
     if (this.cachedTree.containsKey(key) == false) {
         this.cachedTree[key] = [:]
@@ -134,33 +138,43 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraphMap = null, _node = null) 
         return [:]
     }
 
-    def node = _node
-    if (node == null) {
-        node = flowGraphMap.map[flowGraphMap.start].node
-    }
+    def node = flowGraphMap.map[nodeId ?: flowGraphMap.start].node
 
     // add current node to cache if not already there
     // or update it, if it was still active in cache (and possibly incomplete)
     if (this.cachedTree[key].containsKey(node.id) == false || this.cachedTree[key][node.id].active) {
-        def children = flowGraphMap.map[node.id].children.sort{ Integer.parseInt("${it.id}") }
+        def children = flowGraphMap.map[node.id].children.sort{ Integer.parseInt("${it}") }
+        def parent = node.enclosingId
+        def parents = []
+        if (parent != null) {
+            parents = [parent] + this.cachedTree[key][parent].parents
+        }
 
-        // add parent in tree first
+        // nodes are added in ordre (parents first)
+        // copy all lists to avoid storing reference
         this.cachedTree[key][node.id] = [ \
             id: node.id,
-            name: flowGraphMap.map[node.id].name,
             stage: flowGraphMap.map[node.id].isStage == true,
-            parents: node.allEnclosingIds,
-            parent: node.enclosingId,
-            children: children.collect{ it.id },
-            branches: node.allEnclosingIds.findAll{ flowGraphMap.map[it].isBranch },
-            stages: node.allEnclosingIds.findAll{ flowGraphMap.map[it].isStage },
+            branch: flowGraphMap.map[node.id].isBranch == true,
+            parents: parents.collect { it },
+            parent: parent,
+            children: children.collect { it },
+            branches: parents.findAll{ flowGraphMap.map[it].isBranch },
+            stages: parents.findAll{ flowGraphMap.map[it].isStage },
             active: flowGraphMap.map[node.id].active == true,
             haslog: _getLogAction(node) != null,
             displayFunctionName: node.displayFunctionName,
-            url: node.url,
-            label: flowGraphMap.map[node.id].label,
-            host: flowGraphMap.map[node.id].hostname
+            url: node.url
         ]
+        if (flowGraphMap.map[node.id].name) {
+           this.cachedTree[key][node.id] += [ name: flowGraphMap.map[node.id].name ]
+        }
+        if (flowGraphMap.map[node.id].host) {
+            this.cachedTree[key][node.id] += [ host: flowGraphMap.map[node.id].host ]
+        }
+        if (flowGraphMap.map[node.id].label) {
+            this.cachedTree[key][node.id] += [ label: flowGraphMap.map[node.id].label ]
+        }
 
         // then add children
         children.each{
@@ -174,33 +188,33 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraphMap = null, _node = null) 
 
 
 @NonCPS
-java.util.ArrayList _getBranches(java.util.LinkedHashMap tree, id, Boolean showStages, Boolean mergeNestedDuplicates) {
-    def branches = tree[id].branches.collect{ it }
-    if (showStages == false) {
-        branches = branches.minus(tree[id].stages)
-    }
-    branches = branches.collect {
-        def item = tree[it]
-        assert item != null
-        assert item.name != null || item.parent == null
-        return item.name
-    }.findAll { it != null }
-
-    if (tree[id].name != null) {
-        if (tree[id].stage == false || showStages == true) {
-            branches.add(0, tree[id].name)
-        }
-    }
-
+java.util.ArrayList _mergeNestedDuplicates(java.util.ArrayList branches) {
     // remove consecutive duplicates
     // this would happen if 2 nested parallel steps or stages have the same name
     // which is exactly what happens in declarative matrix (parallel step xxx contain stage xxx)
-    if (mergeNestedDuplicates) {
-        def i = 0
-        branches = branches.findAll {
-            i++ == 0 || branches[i - 2] != it
-        }
+    def i = 0
+    return branches.findAll {
+        i++ == 0 || branches[i - 2] != it
     }
+}
+
+
+@NonCPS
+java.util.ArrayList _getBranches(java.util.LinkedHashMap tree, id, java.util.LinkedHashMap options) {
+    def branches = tree[id].branches.collect { it }
+    if (options.showStages) {
+        branches += tree[id].stages
+    }
+
+    // add current node as leading branch ... if it is a branch to show
+    if (
+        tree[id].branch ||
+        (options.showStages && tree[id].stage)
+    ) {
+        branches += [id]
+    }
+    branches = branches.sort { Integer.parseInt("${it}") }.reverse()
+
     return branches
 }
 
@@ -241,7 +255,7 @@ java.util.ArrayList getBlueOceanUrls(build = currentBuild) {
         print "tree=${tree}"
     }
 
-    tree.values().findAll{ it.parent == null || it.name != null }.each {
+    tree.values().findAll{ it.parent == null || it.stage || it.branch }.each {
         def url = "${rootUrl}pipeline/${it.id}"
         def log = "${restUrl}nodes/${it.id}/log/?start=0"
         if (it.parent == null) {
@@ -249,8 +263,18 @@ java.util.ArrayList getBlueOceanUrls(build = currentBuild) {
             log = "${restUrl}log/?start=0"
         }
         // if more than one stage blue ocean urls are invalid
-        def parent = it.branches.size() > 0 ? it.branches[0] : null
-        ret += [ [ id: it.id, name: it.name, stage: it.stage, parents: it.branches, parent: parent, url: url, log: log ] ]
+        def parents = (it.branches + it.stages).sort { Integer.parseInt("${it}") }.reverse()
+        def parent = parents.size() > 0 ? parents[0] : null
+        def item = [
+            id: it.id,
+            name: it.name,
+            stage: it.stage,
+            parents: parents,
+            parent: parent,
+            url: url,
+            log: log
+        ]
+        ret += [ item ]
     }
 
     if (this.verbose) {
@@ -273,11 +297,27 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
 
     tree.values().each {
         def url = _cleanRootUrl("${jenkinsUrl}${it.url}")
-        def log = null
+        def item = [
+            id: it.id,
+            stage: it.stage,
+            parents: it.parents,
+            parent: it.parent,
+            children: it.children,
+            url: url
+        ]
         if (it.haslog) {
-            log = "${url}log"
+            item += [ log: "${url}log" ]
         }
-        ret += [ [ id: it.id, name: it.name, stage: it.stage, parents: it.parents, parent: it.parent, children: it.children, url: url, log: log, label: it.label, host: it.host ] ]
+        if (it.name) {
+            item += [ name: it.name ]
+        }
+        if (it.label) {
+            item += [ label: it.label ]
+        }
+        if (it.host) {
+            item += [ host: it.host ]
+        }
+        ret += [ item ]
     }
 
     if (this.verbose) {
@@ -294,45 +334,74 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
 java.util.LinkedHashMap _parseOptions(java.util.LinkedHashMap options)
 {
     def defaultOptions = [
-        filter: [],
+        filter: null,
         showParents: true,
         showStages: true,
         markNestedFiltered: true,
+        mergeNestedDuplicates: true,
         hidePipeline: true,
-        hideVT100: true,
-        mergeNestedDuplicates: true
+        hideVT100: true
     ]
     // merge 2 maps with priority to options values
     def new_options = defaultOptions.plus(options)
     new_options.keySet().each{
-        assert it in [
-            'filter',
-            'showParents',
-            'showStages',
-            'markNestedFiltered',
-            'mergeNestedDuplicates',
-            'hidePipeline',
-            'hideVT100'
-        ], "invalid option $it"
+        assert it in defaultOptions.keySet(), "invalid option ${it} not in ${defaultOptions.keySet()}"
     }
 
     return new_options
 }
 
 @NonCPS
-Boolean _keepBranches(java.util.ArrayList branches, java.util.ArrayList filter) {
-    return \
-        filter.size() == 0 ||
-        (branches.size() == 0 && null in filter) ||
-        (branches.size() > 0 && filter.count{ it != null && it in CharSequence && branches[0] ==~ /^${it.toString()}$/ } > 0) ||
-        (branches.size() > 0 && filter.count{
-            if (it != null && it in Collection && branches.size() >= it.size()) {
-                def index = 0
-                it.count { pattern ->
-                    branches[it.size() - index++ - 1] ==~ /^${pattern.toString()}$/
-                } == it.size()
+String _getPrefix(java.util.LinkedHashMap tree, java.util.ArrayList branches, java.util.LinkedHashMap options) {
+    def names = branches.collect { tree[it].name }.findAll { it != null }
+
+    def prefix = ''
+    if (names.size() > 0) {
+        if (options.showParents) {
+            // remove duplicates (if needed)
+            if (options.mergeNestedDuplicates) {
+                names = _mergeNestedDuplicates(names)
             }
-        } > 0)
+            prefix = names.reverse().collect{ "[$it] " }.sum()
+        }
+        else {
+            prefix = "[${names[0]}] "
+        }
+    }
+    return prefix
+}
+
+@NonCPS
+Boolean _keepBranches(java.util.LinkedHashMap tree, java.util.ArrayList branches, java.util.LinkedHashMap options) {
+    if (options.filter == null) {
+        // no filter: keep everything
+        return true
+    }
+    else if (options.filter in Collection) {
+        // filter is a list of regexp or a list of list of regexp
+        return false ||
+            // no filter: keep everything
+            options.filter.size() == 0 ||
+            // no branch (i.e. main branch),
+            // keep if filter is null (special filter for main branch)
+            (branches.size() == 0 && null in options.filter) ||
+            // else if one of the filters matches, keep the node
+            (branches.size() > 0 && options.filter.count {
+                def index = 0
+                return false ||
+                    // main branch: keep if filter is null
+                    (it == null && tree[branches[0]].name == null) ||
+                    // if filter is a string: use as regexp
+                    (it in CharSequence && tree[branches[0]].name ==~ /^${it.toString()}$/) ||
+                    // if filter is a list of regexp: all must match the N last branches
+                    (it in Collection && branches.size() >= it.size() && it.reverse().every {
+                        tree[branches[index++]].name ==~ /^${it.toString()}$/
+                    })
+            } > 0)
+    }
+    else {
+        error "unexpected type for option filter ${options.filter}"
+    }
 }
 
 @NonCPS
@@ -353,7 +422,8 @@ void _appendToOutput(java.io.OutputStream output, String logs, String prefix = '
         else {
             IOUtils.write(logList.join('\n'), output, 'UTF-8')
         }
-    } else {
+    }
+    else {
         IOUtils.write(logs, output, 'UTF-8')
     }
 }
@@ -374,7 +444,8 @@ void _getLogsWithBranchInfo(
         build.rawBuild.allActions.findAll{ it.class == hudson.model.CauseAction }.each{ it.causes.each { it.print(s) } }
         if (opt.hideVT100) {
             _appendToOutput(output, b.toString().replaceAll(/\x1B\[8m.*?\x1B\[0m/, ''))
-        } else {
+        }
+        else {
             _appendToOutput(output, b.toString())
         }
     }
@@ -390,21 +461,13 @@ void _getLogsWithBranchInfo(
     def keep = [:]
 
     tree.values().each {
-        def branches = _getBranches(tree, it.id, opt.showStages, opt.mergeNestedDuplicates)
+        def branches = _getBranches(tree, it.id, opt)
 
-        keep."${it.id}" = _keepBranches(branches, opt.filter)
+        keep[it.id] = _keepBranches(tree, branches, opt)
+        def prefix = _getPrefix(tree, branches, opt)
 
-        if (keep."${it.id}") {
+        if (keep[it.id]) {
             // no filtering or kept branch: keep logs
-
-            def prefix = ''
-            if (branches.size() > 0) {
-                if (opt.showParents) {
-                     prefix = branches.reverse().collect{ "[$it] " }.sum()
-                } else {
-                     prefix = "[${branches[0]}] "
-                }
-            }
 
             if (opt.hidePipeline == false) {
                 _appendToOutput(output, "[Pipeline] ${prefix}${it.displayFunctionName}\n")
@@ -418,29 +481,27 @@ void _getLogsWithBranchInfo(
                 ByteArrayOutputStream b = new ByteArrayOutputStream()
                 if (opt.hideVT100) {
                     logaction.logText.writeLogTo(0, b)
-                } else {
+                }
+                else {
                     logaction.logText.writeRawLogTo(0, b)
                 }
                 _appendToOutput(output, b.toString(), prefix)
             }
-        } else if (opt.markNestedFiltered && it.name != null && it.parents.findAll { keep."${it}" }.size() > 0) {
+        }
+        else if (opt.markNestedFiltered && it.id in branches && branches.findAll { keep[it] }.size > 0) {
             def showNestedMarker = true
             if (opt.mergeNestedDuplicates) {
-                def branchesWithDuplicates = _getBranches(tree, it.id, opt.showStages, false)
-                if (branchesWithDuplicates.size() > 1 && branchesWithDuplicates[1] == it.name) {
+                // current node has a branch name: it is branches[0]
+                // next parent branch node is branches[1]
+                // if both have the same value then current branch is a duplicate merged into its parent
+                if (branches.size() > 1 && tree[branches[1]].name == it.name) {
                     // this is already a duplicate branch merged into its parent : marker was already put for parent branch
                     showNestedMarker = false
                 }
             }
             if (showNestedMarker) {
                 // branch is not kept (not in filter) but one of its parent branch is kept: record it as filtered
-                def prefix = null
-                if (opt.showParents) {
-                    prefix = branches.reverse().collect{ "[$it]" }.join(' ')
-                } else {
-                    prefix = "[${branches[0]}]"
-                }
-                _appendToOutput(output, "<nested branch ${prefix}>\n")
+                _appendToOutput(output, "<nested branch ${prefix.replaceFirst(/ $/, '')}>\n")
             }
         }
         // else none of the parent branches is kept, skip this one entirely
@@ -515,10 +576,9 @@ void writeLogsWithBranchInfo(String node, String path, java.util.LinkedHashMap o
     writeLogsWithBranchInfo(new hudson.FilePath(computer.channel, path), options, build)
 }
 
-
 // get list of branches and parents
 // (list of list one item per branch, parents first, null if no branch name)
-// each item of the list can be used as filter
+// each item of the list can be used to build filter
 @NonCPS
 java.util.ArrayList getBranches(java.util.LinkedHashMap options = [:], build = currentBuild)
 {
@@ -535,15 +595,18 @@ java.util.ArrayList getBranches(java.util.LinkedHashMap options = [:], build = c
     }
 
     tree.values().each {
-        def branches = _getBranches(tree, it.id, opt.showStages, opt.mergeNestedDuplicates)
+        def branches = _getBranches(tree, it.id, opt)
+        def keep = _keepBranches(tree, branches, opt)
 
+        branches = branches.collect { tree[it].name }.findAll { it != null }
+        if (opt.mergeNestedDuplicates) {
+            branches = _mergeNestedDuplicates(branches)
+        }
         if (branches.size() == 0) {
             // no branch is represented as [null] when filtering
             // to distinguish from [] : all branches
             branches = [ null ]
         }
-
-        def keep = _keepBranches(branches, opt.filter)
 
         // reverse order to match filtering order (parents first)
         branches = branches.reverse()

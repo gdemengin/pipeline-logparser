@@ -75,7 +75,7 @@ function wait_for_jobs() {
             if [ ! -e ${permalink} ]; then
                 still_incomplete=$(echo "${still_incomplete} ${job}" | xargs)
             else
-                cat ${permalink}
+                #cat ${permalink}
                 # if one of permalinks is not -1 then at least one run ended
                 if [ $(egrep -v " -1$" ${permalink} | wc -l) == 0 ]; then
                     still_incomplete=$(echo "${still_incomplete} ${job}" | xargs)
@@ -124,9 +124,9 @@ function local_agent() {
     while [ "${ret}" != "0" ]; do
         curl --url  http://localhost:8080/jnlpJars/agent.jar --insecure --output agent.jar
         {
-            /opt/java/openjdk/bin/java -jar agent.jar
+            java -jar agent.jar
             ret=$?
-        } || ret=1
+        } || { sleep 10; ret=1; }
     done
 }
 

@@ -84,8 +84,8 @@ function wait_and_clean() {
         sleep 20
         local key=
         while [ "${key}" != "q" ]; do
-            read -t 60 -n 1 -s -r -p "$(date) Press 'q' to stop jenkins instance and exit container " key || echo > /dev/null
-            echo
+            echo "$(date) Press 'q' to stop jenkins instance and exit container" >> stdout 2>&1
+            read -t 60 -n 1 -s -r key || echo > /dev/null
         done
         echo "Stopping ..."
         stop_jenkins
@@ -104,7 +104,7 @@ tail -F stdout jenkins.log /var/jenkins_home/jobs/logparser/builds/1/log &
 
 JOBS="logparser"
 
-run_job "${JOBS}" > stdout 2<&1|| {
+run_job "${JOBS}" > stdout 2>&1 || {
     return_code=$?
     echo "run_jobs failed with code ${return_code}"
     wait_and_clean
