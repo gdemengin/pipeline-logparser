@@ -1,43 +1,46 @@
 # update version of jenkins plugins
-# daily (on branch update-version)
+# weekly (pull-request with branch update-version)
+
+name: update last-good-version
 
 on:
   schedule:
-    - cron:  '0 19 * * *'
+    - cron:  '0 19 * * 1'
   workflow_dispatch:
 
 jobs:
-  jenkins-lts:
+  update-version:
     runs-on: ubuntu-latest
-    name: test on jenkins-lts
+    name: update version
     steps:
-      - uses: actions/checkout@v3
-      - name: test jenkins-lts
+      - uses: actions/checkout@v3.0.2
+
+      - name: test jenkins-lts to get version
         uses: ./test/jenkins-lts/
-      - name: Update last good version
+
+      - name: update jenkins-last
         if: github.event_name != 'pull_request'
         run: |
           chmod +x ./test/update-version.sh
           ./test/update-version.sh
 
-          git status --porcelain ./test/jenkins-last README.md
-          if [ $(git status --porcelain ./test/jenkins-last README.md | wc -l) -eq 0 ]; then
-              echo "jenkins_last_changed=false" >> ${GITHUB_ENV}
-          else
-              echo "jenkins_last_changed=true" >> ${GITHUB_ENV}
-              git diff
-              git config --global user.name 'logparser-action'
-              git config --global user.email 'logparser-action@users.noreply.github.com'
-              git add ./test/jenkins-last README.md
-              git commit -m "[bot] Update last good jenkins version tested"
-          fi
-      - name: push last good version
-        if: github.event_name != 'pull_request' && env.jenkins_last_changed == 'true'
-        run: |
-          if [ "${GITHUB_REF}" == "refs/heads/main" ]; then
-            git fetch
-            git checkout -B update-version
-            git push --force-with-lease --set-upstream origin update-version
-          else
-            git push
-          fi
+      - name: double check new jenkins-last before commit
+        uses: ./test/jenkins-last/
+
+      - name: auto commit version update (for non-default branches)
+        if: github.event_name != 'pull_request' && github.ref != 'refs/heads/main'
+        uses: stefanzweifel/git-auto-commit-action@v4.14.1
+        with:
+          commit_message: "[bot] Update last good version"
+          file_pattern: ./test/jenkins-last README.md
+
+      - name: Create Pull Request (for main branch)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: peter-evans/create-pull-request@v4.1.1
+        with:
+          title: "Update last good version"
+          commit-message: "[bot] Update last good version"
+          committer: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          add-paths: ./test/jenkins-last, README.md
+          branch: create-pull-request/update-version
+          delete-branch: true
