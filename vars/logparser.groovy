@@ -488,23 +488,11 @@ void _getLogsWithBranchInfo(
                 _appendToOutput(output, b.toString(), prefix)
             }
         }
-        else if (opt.markNestedFiltered && it.id in branches && branches.findAll { keep[it] }.size > 0) {
-            def showNestedMarker = true
-            if (opt.mergeNestedDuplicates) {
-                // current node has a branch name: it is branches[0]
-                // next parent branch node is branches[1]
-                // if both have the same value then current branch is a duplicate merged into its parent
-                if (branches.size() > 1 && tree[branches[1]].name == it.name) {
-                    // this is already a duplicate branch merged into its parent : marker was already put for parent branch
-                    showNestedMarker = false
-                }
-            }
-            if (showNestedMarker) {
-                // branch is not kept (not in filter) but one of its parent branch is kept: record it as filtered
-                _appendToOutput(output, "<nested branch ${prefix.replaceFirst(/ $/, '')}>\n")
-            }
+        else if (opt.markNestedFiltered && it.id in branches && branches.size > 0 && keep[branches[1]]) {
+            // branch is not kept (not in filter) but its parent branch is kept: record it as filtered
+            _appendToOutput(output, "<nested branch ${prefix.replaceFirst(/ $/, '')}>\n")
         }
-        // else none of the parent branches is kept, skip this one entirely
+        // else parent branch is already discarded, nothing to show for this node
     }
 }
 

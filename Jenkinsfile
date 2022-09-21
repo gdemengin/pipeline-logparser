@@ -124,9 +124,6 @@ def runBranches(expectedLogMap, expectedLogMapWithDuplicate) {
     expectedLogMap.'null' += '<nested branch [branch0]>\n'
     expectedLogMap.'null' += '<nested branch [branch1]>\n'
     expectedLogMap.'null' += '<nested branch [branch2]>\n'
-    expectedLogMap.'null' += '<nested branch [branch2] [branch21]>\n'
-    expectedLogMap.'null' += '<nested branch [branch2] [branch22]>\n'
-    expectedLogMap.'null' += '<nested branch [branch2] [branch1]>\n'
     expectedLogMap.'null' += '<nested branch [branch3]>\n'
 
     line='this log is not in any branch'
@@ -196,8 +193,6 @@ def runSingleBranches(expectedLogMap) {
     expectedLogMap.'null' += '<nested branch [empty]>\n'
     expectedLogMap.'null' += '<nested branch [endl]>\n'
     expectedLogMap.'null' += '<nested branch [main]>\n'
-    expectedLogMap.'null' += '<nested branch [main] [build]>\n'
-    expectedLogMap.'null' += '<nested branch [main] [test]>\n'
 }
 
 def runBranchesWithManyLines(nblines, expectedLogMap) {
@@ -312,9 +307,6 @@ def runStagesAndBranches(expectedLogMapWithStages, expectedLogMap) {
     }
     expectedLogMapWithStages.'null' += '<nested branch [stage1]>\n'
     expectedLogMapWithStages.'null' += '<nested branch [stage2]>\n'
-    expectedLogMapWithStages.'null' += '<nested branch [stage2] [stage3]>\n'
-    expectedLogMapWithStages.'null' += '<nested branch [stage2] [s2b1]>\n'
-    expectedLogMapWithStages.'null' += '<nested branch [stage2] [s2b2]>\n'
 }
 
 // =======================================
