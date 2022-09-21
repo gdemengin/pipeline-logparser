@@ -68,6 +68,15 @@ java.util.LinkedHashMap _getFlowGraphMap(build) {
 
             def infos = _getNodeInfos(it)
             flowGraphMap[it.id] += infos
+
+            // store info about withLogs block in the parent block
+            // do not try to match begin and end yet as order of node parsing is not guaranteed
+            if (infos.withLogsBlock != null) {
+                if (flowGraphMap[it.enclosingId].withLogsBlocks == null) {
+                    flowGraphMap[it.enclosingId].withLogsBlocks = []
+                }
+                flowGraphMap[it.enclosingId].withLogsBlocks += [ it.id ]
+            }
         }
         else if (it.class != org.jenkinsci.plugins.workflow.graph.FlowEndNode) {
             // https://javadoc.jenkins.io/plugin/workflow-api/org/jenkinsci/plugins/workflow/graph/FlowNode.html#getEnclosingId--
@@ -116,6 +125,16 @@ java.util.LinkedHashMap _getNodeInfos(node) {
                 infos += [ host: wsAction[0].node ]
             }
         }
+    } else if (node.class == org.jenkinsci.plugins.workflow.cps.nodes.StepAtomNode) {
+        if (node.descriptor instanceof org.jenkinsci.plugins.workflow.steps.ErrorStep$DescriptorImpl) {
+            def argAction = node.actions.findAll { it.class == org.jenkinsci.plugins.workflow.cps.actions.ArgumentsActionImpl }
+            assert argAction.size() == 1
+            if (argAction[0].argumentsInternal.message ==~ /^withLogs\[(begin|end),.*\]$/) {
+                def type = argAction[0].argumentsInternal.message.replaceAll(/^withLogs\[(begin|end),.*\]$/,'$1')
+                def name = argAction[0].argumentsInternal.message.replaceAll(/^withLogs\[${type},(.*)\]$/,'$1')
+                infos += [ name: name, withLogsBlock: type ]
+            }
+        }
     }
     return infos
 }
@@ -145,6 +164,27 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraphMap = null, nodeId = null)
     if (this.cachedTree[key].containsKey(node.id) == false || this.cachedTree[key][node.id].active) {
         def children = flowGraphMap.map[node.id].children.sort{ Integer.parseInt("${it}") }
         def parent = node.enclosingId
+
+        if (parent != null && this.cachedTree[key][parent].withLogsBlocks) {
+            def withLogsSiblings = []
+            this.cachedTree[key][parent].withLogsBlocks.each { k, v ->
+                v.each {
+                    assert it.containsKey('begin')
+                    def current = Integer.parseInt(node.id)
+                    def start = Integer.parseInt(it.'begin')
+                    def end = it.containsKey('end') ? Integer.parseInt(it.'end') : current + 1
+                    if (current > start && current < end) {
+                        withLogsSiblings += [ it.'begin' ]
+                    }
+                }
+            }
+            // the last englobing withBlocks becomes a parent
+            if (withLogsSiblings.size() > 0) {
+                this.cachedTree[key][parent].children.remove(node.id)
+                parent = withLogsSiblings.max { Integer.parseInt("${it}") }
+                this.cachedTree[key][parent].children += [node.id]
+            }
+        }
         def parents = []
         if (parent != null) {
             parents = [parent] + this.cachedTree[key][parent].parents
@@ -152,21 +192,27 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraphMap = null, nodeId = null)
 
         // nodes are added in ordre (parents first)
         // copy all lists to avoid storing reference
+        // (some lists like children may be altered in next iterations)
         this.cachedTree[key][node.id] = [ \
             id: node.id,
             stage: flowGraphMap.map[node.id].isStage == true,
             branch: flowGraphMap.map[node.id].isBranch == true,
             parents: parents.collect { it },
             parent: parent,
+            // children may be modified when recording children withLogsBlocks
             children: children.collect { it },
             branches: parents.findAll{ flowGraphMap.map[it].isBranch },
             stages: parents.findAll{ flowGraphMap.map[it].isStage },
             active: flowGraphMap.map[node.id].active == true,
             haslog: _getLogAction(node) != null,
             displayFunctionName: node.displayFunctionName,
-            url: node.url
+            url: node.url,
+            // record unmodified list of parents and children from flowGraph
+            // for getPipelineStepsUrls
+            stepParents: node.allEnclosingIds.collect { it },
+            stepChildren: children.collect { it }
         ]
-        if (flowGraphMap.map[node.id].name) {
+        if (flowGraphMap.map[node.id].name && flowGraphMap.map[node.id].withLogsBlock != 'end') {
            this.cachedTree[key][node.id] += [ name: flowGraphMap.map[node.id].name ]
         }
         if (flowGraphMap.map[node.id].host) {
@@ -174,6 +220,49 @@ java.util.LinkedHashMap _getNodeTree(build, _flowGraphMap = null, nodeId = null)
         }
         if (flowGraphMap.map[node.id].label) {
             this.cachedTree[key][node.id] += [ label: flowGraphMap.map[node.id].label ]
+        }
+        if (flowGraphMap.map[node.id].withLogsBlock) {
+            this.cachedTree[key][node.id] += [ withLogsBlock: flowGraphMap.map[node.id].withLogsBlock ]
+        }
+        if (flowGraphMap.map[node.id].withLogsBlocks) {
+            // reorg the blocks in begin/end
+            def withLogsBlocks = [:]
+            flowGraphMap.map[node.id].withLogsBlocks.sort { Integer.parseInt("${it}") }.each {
+                def type = flowGraphMap.map[it].withLogsBlock
+                def name = flowGraphMap.map[it].name
+                assert type in ['begin','end'] && name != null
+                if (! (name in withLogsBlocks.keySet())) {
+                    withLogsBlocks[name] = []
+                }
+                if (type == 'begin') {
+                    withLogsBlocks[name] += [ [begin: it] ]
+                }
+                else {
+                    def idx = withLogsBlocks[name].size() - 1
+                    withLogsBlocks[name].reverse().any { block ->
+                        if (! ('end' in block.keySet())) {
+                            withLogsBlocks[name][idx] += [end: it]
+                            // break loop
+                            return true
+                        }
+                        else if (idx == 0) {
+                            // could not find a begin corresponding to this end
+                            // may happen if someone generates a fake withLogs end marker
+                            error "failed to match withLogs Markers ('withLogs[begin,${name}]', 'withLogs[end,${name}]')"
+                        }
+                        idx--
+                        // continue loop
+                        return
+                    }
+                }
+            }
+
+            this.cachedTree[key][node.id] += [ withLogsBlocks: withLogsBlocks ]
+        }
+
+        def withLogs = parents.findAll{ flowGraphMap.map[it].withLogsBlock != null }
+        if (withLogs.size() > 0) {
+            this.cachedTree[key][node.id] += [ withLogs: withLogs ]
         }
 
         // then add children
@@ -205,11 +294,15 @@ java.util.ArrayList _getBranches(java.util.LinkedHashMap tree, id, java.util.Lin
     if (options.showStages) {
         branches += tree[id].stages
     }
+    if (options.showWithLogs && tree[id].withLogs != null) {
+        branches += tree[id].withLogs
+    }
 
     // add current node as leading branch ... if it is a branch to show
     if (
         tree[id].branch ||
-        (options.showStages && tree[id].stage)
+        (options.showStages && tree[id].stage) ||
+        (options.showWithLogs && tree[id].withLogsBlock == 'begin')
     ) {
         branches += [id]
     }
@@ -300,9 +393,9 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
         def item = [
             id: it.id,
             stage: it.stage,
-            parents: it.parents,
-            parent: it.parent,
-            children: it.children,
+            parents: it.stepParents,
+            parent: it.stepParents.size() > 0 ? it.stepParents[0] : null,
+            children: it.stepChildren,
             url: url
         ]
         if (it.haslog) {
@@ -316,6 +409,9 @@ java.util.ArrayList getPipelineStepsUrls(build = currentBuild) {
         }
         if (it.host) {
             item += [ host: it.host ]
+        }
+        if (it.withLogsBlock) {
+            item += [ withLogsBlock: it.withLogsBlock ]
         }
         ret += [ item ]
     }
@@ -337,10 +433,12 @@ java.util.LinkedHashMap _parseOptions(java.util.LinkedHashMap options)
         filter: null,
         showParents: true,
         showStages: true,
+        showWithLogs: true,
         markNestedFiltered: true,
         mergeNestedDuplicates: true,
         hidePipeline: true,
-        hideVT100: true
+        hideVT100: true,
+        hideCommonBranches: false
     ]
     // merge 2 maps with priority to options values
     def new_options = defaultOptions.plus(options)
@@ -400,7 +498,8 @@ Boolean _keepBranches(java.util.LinkedHashMap tree, java.util.ArrayList branches
             } > 0)
     }
     else {
-        error "unexpected type for option filter ${options.filter}"
+        // filter is a regexp of the prefix
+        return  _getPrefix(tree, branches, options) ==~ /${options.filter}/
     }
 }
 
@@ -459,11 +558,31 @@ void _getLogsWithBranchInfo(
     }
 
     def keep = [:]
+    def rootNames = null
+    if (opt.hideCommonBranches) {
+        tree.values().each {
+            def branches = _getBranches(tree, it.id, opt)
 
+            keep[it.id] = _keepBranches(tree, branches, opt)
+
+            if (keep[it.id]) {
+                def names = branches.collect{ tree[it].name }
+                if (rootNames == null) {
+                    rootNames = names
+                }
+                rootNames = rootNames.intersect(names)
+            }
+        }
+    }
     tree.values().each {
         def branches = _getBranches(tree, it.id, opt)
 
-        keep[it.id] = _keepBranches(tree, branches, opt)
+        if (opt.hideCommonBranches) {
+            branches = branches.dropRight(rootNames.size())
+        }
+        else {
+            keep[it.id] = _keepBranches(tree, branches, opt)
+        }
         def prefix = _getPrefix(tree, branches, opt)
 
         if (keep[it.id]) {
@@ -621,6 +740,39 @@ void archiveArtifactBuffer(String name, String buffer) {
         file.parentFile.mkdirs();
     }
     file.write(buffer)
+}
+
+
+class _withLogsWrapper {
+    String name;
+    def _logparser;
+
+    _withLogsWrapper(String name, _logparser) {
+        this.name = name
+        this._logparser = _logparser
+    }
+
+    String getLogs(options = [:]) {
+        assert ! options.containsKey('filter')
+        def opt = [hideCommonBranches: true] + options + [filter: "^.*\\[${this.name}\\] .*\$"]
+        return _logparser.getLogsWithBranchInfo(opt)
+    }
+
+    void archiveLogs(String name, java.util.LinkedHashMap options = [:]) {
+        assert ! options.containsKey('filter')
+        def opt = [hideCommonBranches: true] + options + [filter: "^.*\\[${this.name}\\] .*\$"]
+        _logparser.archiveLogsWithBranchInfo(name, opt)
+    }
+
+    void writeLogs(String node, String path, java.util.LinkedHashMap options = [:]) {
+        assert ! options.containsKey('filter')
+        def opt = [hideCommonBranches: true] + options + [filter: "^.*\\[${this.name}\\] .*\$"]
+        _logparser.writeLogsWithBranchInfo(node, path, opt)
+    }
+}
+
+def withLogsWrapper(String name) {
+    return new _withLogsWrapper(name, this)
 }
 
 return this

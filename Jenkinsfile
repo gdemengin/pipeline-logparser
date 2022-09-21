@@ -153,7 +153,7 @@ def runSingleBranches(expectedLogMap) {
     expectedLogMap.'null' += line + '\n'
 
     // parallel with only one branch
-    // it's a way to generate block of logs (wish there was a dedicated log command to do that)
+    // it's a way to generate block of logs (alternative: withLogs)
     expectedLogMap.'init' = ''
     parallel init: {
         line=1
@@ -1213,6 +1213,128 @@ def testWriteToFile() {
     }
 }
 
+def testWithLogs() {
+    stage('testWithLogs') {
+        echo 'testWithLogs'
+        withLogs('withLogs1') {
+            echo 'in block 1'
+            withLogs('withLogs2') {
+                echo 'in block 2'
+                parallel(
+                    '1': { echo 'in branch 1' },
+                    '2': { echo 'in branch 2' },
+                    '3': { echo 'in branch 3' },
+                    '4': {
+                        withLogs('withLogs3') {
+                            echo 'in block 3 branch 4'
+                        }
+                    }
+                )
+            }
+            // same name as parent block
+            parallel 'withLogs1': { echo 'in branch withLogs1.withLogs1' }
+            echo 'leaving block 1'
+        }
+        echo 'not in any block'
+    }
+    def logwrapper1 = logparser.withLogsWrapper('withLogs1')
+    def logwrapper2 = logparser.withLogsWrapper('withLogs2')
+    def logwrapper3 = logparser.withLogsWrapper('withLogs3')
+
+    def expected = '''\
+in block 1
+withLogs(withLogs2) {
+[withLogs2] in block 2
+[withLogs2] [1] in branch 1
+[withLogs2] [2] in branch 2
+[withLogs2] [3] in branch 3
+[withLogs2] [4] withLogs(withLogs3) {
+[withLogs2] [4] [withLogs3] in block 3 branch 4
+[withLogs2] [4] } // withLogs(withLogs3)
+} // withLogs(withLogs2)
+[withLogs1] in branch withLogs1.withLogs1
+leaving block 1
+'''
+    def logs = logwrapper1.getLogs()
+    assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
+
+    expected = '''\
+in block 2
+[1] in branch 1
+[2] in branch 2
+[3] in branch 3
+[4] withLogs(withLogs3) {
+[4] [withLogs3] in block 3 branch 4
+[4] } // withLogs(withLogs3)
+'''
+    logs = logwrapper2.getLogs()
+    assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
+
+    expected = 'in block 3 branch 4\n'
+    logs = logwrapper3.getLogs()
+    assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
+
+
+    expected = '''\
+[testWithLogs] [withLogs1] in block 1
+[testWithLogs] [withLogs1] withLogs(withLogs2) {
+[testWithLogs] [withLogs1] [withLogs2] in block 2
+[testWithLogs] [withLogs1] [withLogs2] [1] in branch 1
+[testWithLogs] [withLogs1] [withLogs2] [2] in branch 2
+[testWithLogs] [withLogs1] [withLogs2] [3] in branch 3
+[testWithLogs] [withLogs1] [withLogs2] [4] withLogs(withLogs3) {
+[testWithLogs] [withLogs1] [withLogs2] [4] [withLogs3] in block 3 branch 4
+[testWithLogs] [withLogs1] [withLogs2] [4] } // withLogs(withLogs3)
+[testWithLogs] [withLogs1] } // withLogs(withLogs2)
+[testWithLogs] [withLogs1] in branch withLogs1.withLogs1
+[testWithLogs] [withLogs1] leaving block 1
+'''
+    logs = logwrapper1.getLogs(hideCommonBranches: false)
+    assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
+
+    def logwrapper4 = logparser.withLogsWrapper('withLogs4')
+    try {
+        withLogs(logwrapper4.name) {
+            print 'calling error'
+            error 'error1'
+        }
+        assert false
+    }
+    catch(e) {}
+    assert logwrapper4.getLogs() == "calling error\nwithErrors failed with 'class hudson.AbortException'\n", logwrapper4.getLogs()
+
+    def logwrapper5 = logparser.withLogsWrapper('withLogs5')
+    try {
+        withLogs(logwrapper5.name) {
+            print 'raising Error'
+            assert 1 == 0
+        }
+        assert false
+    }
+    catch(Error e) {}
+    assert logwrapper5.getLogs() == "raising Error\nwithErrors failed with 'class org.codehaus.groovy.runtime.powerassert.PowerAssertionError'\n", logwrapper5.getLogs()
+
+    def logwrapper6 = logparser.withLogsWrapper('withLogs6')
+    try {
+        withLogs(logwrapper6.name) {
+            print 'raising Exception'
+            throw new Exception('exception1')
+        }
+        assert false
+    }
+    catch(Exception e) {}
+    assert logwrapper6.getLogs() == "raising Exception\nwithErrors failed with 'class java.lang.Exception'\n", logwrapper6.getLogs()
+
+    withLogs('named-block') { print 4 }
+    def logwrapper7 = logparser.withLogsWrapper('named-block')
+    assert logwrapper7.getLogs() == '4\n', logwrapper7.getLogs()
+
+    withLogs('named-block') { print 5 }
+    assert logparser.withLogsWrapper('named-block').getLogs() == '4\n5\n', logparser.withLogsWrapper('named-block').getLogs()
+    assert logwrapper7.getLogs() == '4\n5\n', logwrapper7.getLogs()
+
+}
+
 
 
 // ===============
@@ -1220,6 +1342,7 @@ def testWriteToFile() {
 // ===============
 
 testLogparser()
+testWithLogs()
 testCompletedJobs()
 testWriteToFile()
 // test with less nodes than executor
