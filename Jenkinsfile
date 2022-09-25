@@ -1237,10 +1237,8 @@ def testWithLogs() {
         }
         echo 'not in any block'
     }
-    def logwrapper1 = logparser.withLogsWrapper('withLogs1')
-    def logwrapper2 = logparser.withLogsWrapper('withLogs2')
-    def logwrapper3 = logparser.withLogsWrapper('withLogs3')
 
+    def logs = logparser.getBranchLogs('withLogs1')
     def expected = '''\
 in block 1
 withLogs(withLogs2) {
@@ -1255,9 +1253,9 @@ withLogs(withLogs2) {
 [withLogs1] in branch withLogs1.withLogs1
 leaving block 1
 '''
-    def logs = logwrapper1.getLogs()
     assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
 
+    logs = logparser.getBranchLogs('withLogs2')
     expected = '''\
 in block 2
 [1] in branch 1
@@ -1267,14 +1265,14 @@ in block 2
 [4] [withLogs3] in block 3 branch 4
 [4] } // withLogs(withLogs3)
 '''
-    logs = logwrapper2.getLogs()
     assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
 
+    logs = logparser.getBranchLogs('withLogs3')
     expected = 'in block 3 branch 4\n'
-    logs = logwrapper3.getLogs()
     assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
 
 
+    logs = logparser.getBranchLogs('withLogs1', [hideCommonBranches: false])
     expected = '''\
 [testWithLogs] [withLogs1] in block 1
 [testWithLogs] [withLogs1] withLogs(withLogs2) {
@@ -1289,50 +1287,69 @@ in block 2
 [testWithLogs] [withLogs1] in branch withLogs1.withLogs1
 [testWithLogs] [withLogs1] leaving block 1
 '''
-    logs = logwrapper1.getLogs(hideCommonBranches: false)
     assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
 
-    def logwrapper4 = logparser.withLogsWrapper('withLogs4')
     try {
-        withLogs(logwrapper4.name) {
+        withLogs('withLogs4') {
             print 'calling error'
             error 'error1'
         }
         assert false
     }
     catch(e) {}
-    assert logwrapper4.getLogs() == "calling error\nwithErrors failed with 'class hudson.AbortException'\n", logwrapper4.getLogs()
 
-    def logwrapper5 = logparser.withLogsWrapper('withLogs5')
+    logs = logparser.getBranchLogs('withLogs4')
+    expected = '''\
+calling error
+withErrors failed with 'class hudson.AbortException'
+'''
+    assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
+
     try {
-        withLogs(logwrapper5.name) {
+        withLogs('withLogs5') {
             print 'raising Error'
             assert 1 == 0
         }
         assert false
     }
     catch(Error e) {}
-    assert logwrapper5.getLogs() == "raising Error\nwithErrors failed with 'class org.codehaus.groovy.runtime.powerassert.PowerAssertionError'\n", logwrapper5.getLogs()
 
-    def logwrapper6 = logparser.withLogsWrapper('withLogs6')
+    logs = logparser.getBranchLogs('withLogs5')
+    expected = '''\
+raising Error
+withErrors failed with 'class org.codehaus.groovy.runtime.powerassert.PowerAssertionError'
+'''
+    assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
+
     try {
-        withLogs(logwrapper6.name) {
+        withLogs('withLogs6') {
             print 'raising Exception'
             throw new Exception('exception1')
         }
         assert false
     }
     catch(Exception e) {}
-    assert logwrapper6.getLogs() == "raising Exception\nwithErrors failed with 'class java.lang.Exception'\n", logwrapper6.getLogs()
+
+    logs = logparser.getBranchLogs('withLogs6')
+    expected = '''\
+raising Exception
+withErrors failed with 'class java.lang.Exception'
+'''
+    assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
 
     withLogs('named-block') { print 4 }
-    def logwrapper7 = logparser.withLogsWrapper('named-block')
-    assert logwrapper7.getLogs() == '4\n', logwrapper7.getLogs()
+
+    logs = logparser.getBranchLogs('named-block')
+    expected = '4\n'
+    assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
 
     withLogs('named-block') { print 5 }
-    assert logparser.withLogsWrapper('named-block').getLogs() == '4\n5\n', logparser.withLogsWrapper('named-block').getLogs()
-    assert logwrapper7.getLogs() == '4\n5\n', logwrapper7.getLogs()
 
+    logs = logparser.getBranchLogs('named-block')
+    expected = '4\n5\n'
+    assert logs == expected, "'''\n${logs}''' != '''\n${expected}'''"
+
+// TODO test archive/write/logparser options vs wigthLogs/pipelineurls & bo urls
 }
 
 

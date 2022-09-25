@@ -743,36 +743,36 @@ void archiveArtifactBuffer(String name, String buffer) {
 }
 
 
-class _withLogsWrapper {
-    String name;
-    def _logparser;
-
-    _withLogsWrapper(String name, _logparser) {
-        this.name = name
-        this._logparser = _logparser
+java.util.LinkedHashMap getBranchLogsOptions(String name, java.util.LinkedHashMap options = [:]) {
+    assert ! options.containsKey('filter')
+    // https://stackoverflow.com/questions/51160882/regex-to-escape-special-characters-in-groovy
+    String specialCharRegex = /[\W_&&[^\s]]/
+    def filter = /^.*\[${name.replaceAll(specialCharRegex, /\\$0/)}\] /
+    if (! options.containsKey('includechildren') || options.'includechildren') {
+        filter += /.*$/
     }
-
-    String getLogs(options = [:]) {
-        assert ! options.containsKey('filter')
-        def opt = [hideCommonBranches: true] + options + [filter: "^.*\\[${this.name}\\] .*\$"]
-        return _logparser.getLogsWithBranchInfo(opt)
+    else {
+        // exclude nested branches from filter
+        filter += /$/
     }
-
-    void archiveLogs(String name, java.util.LinkedHashMap options = [:]) {
-        assert ! options.containsKey('filter')
-        def opt = [hideCommonBranches: true] + options + [filter: "^.*\\[${this.name}\\] .*\$"]
-        _logparser.archiveLogsWithBranchInfo(name, opt)
+    // default : hide common branches
+    def ret = [hideCommonBranches: true, filter: filter] + options
+    if (ret.containsKey('includeChildren')) {
+        ret.remove('includeChildren')
     }
-
-    void writeLogs(String node, String path, java.util.LinkedHashMap options = [:]) {
-        assert ! options.containsKey('filter')
-        def opt = [hideCommonBranches: true] + options + [filter: "^.*\\[${this.name}\\] .*\$"]
-        _logparser.writeLogsWithBranchInfo(node, path, opt)
-    }
+    return ret
 }
 
-def withLogsWrapper(String name) {
-    return new _withLogsWrapper(name, this)
+String getBranchLogs(String name, java.util.LinkedHashMap options = [:], build = currentBuild) {
+    return this.getLogsWithBranchInfo(this.getBranchLogsOptions(name, options), build)
+}
+
+void archiveBranchLogs(String name, String filename, java.util.LinkedHashMap options = [:]) {
+    this.archiveLogsWithBranchInfo(filename, this.getBranchLogsOptions(name, options))
+}
+
+void writeBranchLogs(String name, String node, String path, java.util.LinkedHashMap options = [:], build = currentBuild) {
+    this.writeLogsWithBranchInfo(node, path, this.getBranchLogsOptions(name, options), build)
 }
 
 return this
