@@ -8,8 +8,7 @@ A library to parse and filter logs
 * implementation of https://stackoverflow.com/a/57351397
   
 Content:
-  it provides
-  * APIs to capture logs from any block of pipeline code
+  * `withLogs` wrapper to capture logs from any block of pipeline code
     ```
     withLogs('logs1') {
       ...
@@ -24,23 +23,23 @@ Content:
     [branch2] in branch2
     [branch2] [branch21] in branch2.branch21
     ```
+    * 'branches' highlited can be from `parallel`, `stage` or `withLogs` statements  
+      (`stages` and `withLogs` branch names can be hidden for those who wish to see only parallel branch names)
     * logs may come from current run or from another run or job
-    * 'branches' highlited can be from `parallel`, `stage` or `withLogs` statements
-      (`stages` and `withLogs` branch names can be hidden for those who wish to see only parallel branches' names)
     * logs can be retrieved
       * as String for those who need to programatically parse logs
       * or directly in a file (in run artifacts or in workspace) for those who need to archive logs with branch names for later use
+    * logs can be filtered to show only specific branches
+      ```
+      [branch2] in branch2
+      <nested branch [branch2] [branch21]>
+      ```
     * optionnaly logs can include technical lines (`[Pipeline]` technical lines and VT100 markers)
        ```
       [Pipeline] echo
       [branch1] in branch1
       ```
-  * APIs to filter logs from one or multiple branch(es)
-    ```
-    [branch2] in branch2
-    <nested branch [branch2] [branch21]>
-    ```
-  * to access REST APIs urls to logs
+  * APIs to access REST urls to logs
     * for all steps in the 'pipeline step' view
     * for each of the 'Blue Ocean' branches (parallel branches and stages)
   
