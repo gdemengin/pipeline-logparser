@@ -8,11 +8,41 @@ A library to parse and filter logs
 * implementation of https://stackoverflow.com/a/57351397
   
 Content:
-  * it provides API to parse logs (from currentBuild or from another run or job) and append them with name of current branch/stage
-    * as String for those who need to programatically parse logs
-    * or as run artifacts for those who need to archive logs with branch names for later use
-  * it provides accessors to 'pipeline step' logs
-  * it provides accessors to 'Blue Ocean' logs urls for parallel branches and stages
+  it provides
+  * APIs to capture logs from any block of pipeline code
+    ```
+    withLogs('logs1') {
+      ...
+    }
+    ...
+    def logs1 = logparser.getBranchLogs('logs1')
+    ```
+  * APIs to retrieve logs with the name(s) of current branch(es) on each line
+    ```
+    [branch1] in branch1
+    [branch1] Sleeping for 1 sec
+    [branch2] in branch2
+    [branch2] [branch21] in branch2.branch21
+    ```
+    * logs may come from current run or from another run or job
+    * 'branches' highlited can be from `parallel`, `stage` or `withLogs` statements
+      (`stages` and `withLogs` branch names can be hidden for those who wish to see only parallel branches' names)
+    * logs can be retrieved
+      * as String for those who need to programatically parse logs
+      * or directly in a file (in run artifacts or in workspace) for those who need to archive logs with branch names for later use
+    * optionnaly logs can include technical lines (`[Pipeline]` technical lines and VT100 markers)
+       ```
+      [Pipeline] echo
+      [branch1] in branch1
+      ```
+  * APIs to filter logs from one or multiple branch(es)
+    ```
+    [branch2] in branch2
+    <nested branch [branch2] [branch21]>
+    ```
+  * to access REST APIs urls to logs
+    * for all steps in the 'pipeline step' view
+    * for each of the 'Blue Ocean' branches (parallel branches and stages)
   
 Tested with:
 
@@ -32,7 +62,7 @@ Tested with:
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@3.2') _
+@Library('pipeline-logparser@3.3') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
 * _it may be different on your instance_
@@ -48,64 +78,19 @@ def mylog = logparser.getLogsWithBranchInfo()
 
 ### Detailed Documentation
 
-see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/3.2/vars/logparser.txt)  
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/3.3/vars/logparser.txt)  
 * _also available in $JOB_URL/pipeline-syntax/globals#logparser_
   * _visible only after the library has been imported once_
   * _requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity_
  
 this library provides functions:
+* to capture logs from any block of pipeline code with `withLogs` statement
 * to retrieve logs with branch info (as string or as run artifacts)
-* to filter logs from branches
+* to filter logs from branches/stages/withLogs
 * to retrieve direct urls to logs (Pipeline Steps & Blue Ocean)
   
 functionalities:
-- get Blue Ocean links to logs for parallel branches and stages
-  * from current run
-    ```
-    stage ('stage1') {
-      parallel (
-        branch1: { echo 'in branch1' },
-        branch2: { echo 'in branch2' }
-      )
-    }
-    def blueTree = logparser.getBlueOceanUrls()
-    ```
-    result:
-    ```
-    blueTree = [
-      [
-        id:2, name:null, stage:false, parents:[], parent:null,
-        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline,
-        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/log/?start=0
-      ],
-      [
-        id:4, name:stage1, stage:true, parents:[2], parent:2,
-        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/4,
-        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/4/log/?start=0
-      ],
-      [
-        id:7, name:branch1, stage:false, parents:[4, 2], parent:4,
-        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/7,
-        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/7/log/?start=0
-      ],
-      [
-        id:8, name:branch2, stage:false, parents:[4, 2], parent:4,
-        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/8,
-        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/8/log/?start=0
-      ]
-    ]
-    ```
-
-  * get Blue Ocean links from another job/run
-    ```
-    // get RunWrapper for current job last stable run
-    // using https://github.com/gdemengin/pipeline-whitelist
-    @Library('pipeline-whitelist@4.0') _
-    def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
-
-    def blueTree = logparser.getBlueOceanUrls(otherBuild)
-    ```
-
+TODO withLogs + new options
 - retrieve logs with branch info
 
   * add branch prefix [branchName] in front of each line for that branch
@@ -445,6 +430,53 @@ functionalities:
     def otherBuildLogs = logparser.getLogsWithBranchInfo([:], otherBuild)
     ```
 
+- get Blue Ocean links to logs for parallel branches and stages
+  * from current run
+    ```
+    stage ('stage1') {
+      parallel (
+        branch1: { echo 'in branch1' },
+        branch2: { echo 'in branch2' }
+      )
+    }
+    def blueTree = logparser.getBlueOceanUrls()
+    ```
+    result:
+    ```
+    blueTree = [
+      [
+        id:2, name:null, stage:false, parents:[], parent:null,
+        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline,
+        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/log/?start=0
+      ],
+      [
+        id:4, name:stage1, stage:true, parents:[2], parent:2,
+        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/4,
+        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/4/log/?start=0
+      ],
+      [
+        id:7, name:branch1, stage:false, parents:[4, 2], parent:4,
+        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/7,
+        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/7/log/?start=0
+      ],
+      [
+        id:8, name:branch2, stage:false, parents:[4, 2], parent:4,
+        url:https://mydomain.com/blue/organizations/jenkins/myjob/detail/myjob/1/pipeline/8,
+        log:https://mydomain.com/blue/rest/organizations/jenkins/pipelines/myjob/runs/1/nodes/8/log/?start=0
+      ]
+    ]
+    ```
+
+  * get Blue Ocean links from another job/run
+    ```
+    // get RunWrapper for current job last stable run
+    // using https://github.com/gdemengin/pipeline-whitelist
+    @Library('pipeline-whitelist@4.0') _
+    def otherBuild = whitelist.getLastStableRunWrapper(whitelist.getJobByName(env.JOB_NAME))
+
+    def blueTree = logparser.getBlueOceanUrls(otherBuild)
+    ```
+
 - get pipeline steps tree, with links to logs, and information about parallel branches and stages
   * from current run
     ```
@@ -595,12 +627,13 @@ workarround: use `logparser.writeLogswithBranchInfo` to write logs directly in a
   - stop jenkins
   - get result
 
-  (1) CAUTION: changes to test must be commited in the local branch
+  (1) CAUTION: changes to test must be commited in the local branch (no need to push commit for local tests)
 
 * to test on jenkins last known good version
   ```
   ./test/jenkins-last/run.sh
   ```
+  last known good version can be updated with action [![.github/workflows/update-version.yml]](https://github.com/gdemengin/pipeline-logparser/actions/workflows/update-version.yml)
 
 * to keep instance running after the test and make it accessible on http://localhost:8080 (jenkins/jenkins)
   ```
@@ -668,3 +701,12 @@ workarround: use `logparser.writeLogswithBranchInfo` to write logs directly in a
 
 * 3.2 (08/2022)
   - add function to write directly to a file #21
+
+* 3.3 (10/2022)
+  - add withLogs + withLogsWrapper to capture logs from any block of pipeline instructions
+  - add option showWithLogs for *LogsWithBranchInfo() to hide showLogs when filtering other branches
+  - add option hideCommonBranches for *LogsWithBranchInfo() to hide branches than are present on every line
+    to make logs (especially logs from withLogs steps) easier to read
+  - add ability to filter with regexp on branch(es) prefix
+  - add wfapi urls to logs in getPipelineStepsUrls()
+  - fix issue with filtering of nested branches
