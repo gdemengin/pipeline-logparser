@@ -21,3 +21,5 @@ workflow-aggregator
 ws-cleanup
 # required by logparser
 blueocean
+# to install test agent over master
+command-launcher
