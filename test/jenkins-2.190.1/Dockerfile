@@ -3,6 +3,13 @@ FROM jenkins/jenkins:2.190.1
 # switch to root, let the entrypoint drop back to jenkins
 USER root
 
+# patch sources.list for old debian versions
+# https://stackoverflow.com/questions/76094428/debian-stretch-repositories-404-not-found
+RUN sed -i s/deb.debian.org/archive.debian.org/g /etc/apt/sources.list \
+ && sed -i 's|security.debian.org|archive.debian.org/debian-security/|g' /etc/apt/sources.list \
+ && sed -i '/stretch\/updates/d' /etc/apt/sources.list \
+ && sed -i '/stretch-updates/d' /etc/apt/sources.list
+
 # install prerequisite debian packages
 RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
