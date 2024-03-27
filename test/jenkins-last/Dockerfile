@@ -1,4 +1,4 @@
-FROM jenkins/jenkins:2.375.2
+FROM jenkins/jenkins:2.440.2
 
 # switch to root, let the entrypoint drop back to jenkins
 USER root
