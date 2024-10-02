@@ -58,6 +58,7 @@ function create_local_repo() {
     echo "building local git repository from ${SRC}"
 
     rm -rf ${DST}
+    git config --global --add safe.directory ${SRC}
     git clone file://${SRC} ${DST}
     cd ${DST}
     git status
