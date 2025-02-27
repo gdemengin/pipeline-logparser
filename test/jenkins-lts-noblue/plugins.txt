@@ -22,8 +22,5 @@ timestamper
 workflow-aggregator
 ws-cleanup
 
-# required by blueparser
-blueocean
-
 # to install test agent over master
 command-launcher
