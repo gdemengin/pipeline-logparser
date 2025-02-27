@@ -260,7 +260,7 @@ java.util.ArrayList getBlueOceanUrls(build = currentBuild) {
         return ret
     } catch (ClassNotFoundException e) {
         return []
-    } catch (CpsCompilationErrorsException e) {
+    } catch (org.jenkinsci.plugins.workflow.cps.CpsCompilationErrorsException e) {
         return []
     }
 }
