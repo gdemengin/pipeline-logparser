@@ -1,0 +1,23 @@
+# default plugins suggested in setupwizard (last updated 07/2022)
+# https://github.com/jenkinsci/jenkins/blob/master/core/src/main/resources/jenkins/install/platform-plugins.json
+ant
+antisamy-markup-formatter
+build-timeout
+cloudbees-folder
+credentials-binding
+email-ext
+git
+github-branch-source
+gradle
+ldap
+mailer
+matrix-auth
+pam-auth
+pipeline-github-lib
+pipeline-stage-view
+ssh-slaves
+timestamper
+workflow-aggregator
+ws-cleanup
+# to install test agent over master
+command-launcher
