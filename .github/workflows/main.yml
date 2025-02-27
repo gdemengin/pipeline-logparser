@@ -15,6 +15,15 @@ jobs:
       - name: test jenkins-lts
         uses: ./test/jenkins-lts/
 
+  # lts without blue ocean
+  jenkins-lts-noblue:
+    runs-on: ubuntu-latest
+    name: test without blueocean on jenkins lts
+    steps:
+      - uses: actions/checkout@v4
+      - name: test jenkins-lts-noblue
+        uses: ./test/jenkins-lts-noblue/
+
   # last good version: to update it, run "update-version.yml" workflow
   jenkins-last:
     runs-on: ubuntu-latest
