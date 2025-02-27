@@ -218,7 +218,6 @@ String _cleanRootUrl(String urlIn) {
 
 @NonCPS
 java.util.ArrayList getBlueOceanUrls(build = currentBuild) {
-    try {
     // if JENKIN_URL not configured correctly, use placeholder
     def jenkinsUrl = _cleanRootUrl(env.JENKINS_URL ?: '$JENKINS_URL')
 
