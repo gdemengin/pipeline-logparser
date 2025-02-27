@@ -219,21 +219,21 @@ String _cleanRootUrl(String urlIn) {
 @NonCPS
 java.util.ArrayList getBlueOceanUrls(build = currentBuild) {
     try {
-        // if JENKIN_URL not configured correctly, use placeholder
-        def jenkinsUrl = _cleanRootUrl(env.JENKINS_URL ?: '$JENKINS_URL')
-    
-        def rootUrl = null
-        build.rawBuild.allActions.findAll { it.class == io.jenkins.blueocean.service.embedded.BlueOceanUrlAction }.each {
-            rootUrl = _cleanRootUrl(jenkinsUrl + it.blueOceanUrlObject.url)
-        }
-        assert rootUrl != null
-    
+    // if JENKIN_URL not configured correctly, use placeholder
+    def jenkinsUrl = _cleanRootUrl(env.JENKINS_URL ?: '$JENKINS_URL')
+
+    def rootUrl = null
+    build.rawBuild.allActions.findAll { it.class == io.jenkins.blueocean.service.embedded.BlueOceanUrlAction }.each {
+        rootUrl = _cleanRootUrl(jenkinsUrl + it.blueOceanUrlObject.url)
+    }
+    assert rootUrl != null
+
+    try {
         // TODO : find a better way to do get the rest url for this build ...
-        def theClass = Class.forName('io.jenkins.blueocean.service.embedded.BlueOceanRootAction.BlueOceanUIProviderImpl')
-        def blueProvider = theClass.newInstance()
+        def blueProvider = new io.jenkins.blueocean.service.embedded.BlueOceanRootAction.BlueOceanUIProviderImpl()
         def buildenv = build.rawBuild.getEnvironment()
         def restUrl = _cleanRootUrl("${jenkinsUrl}${blueProvider.getUrlBasePrefix()}/rest${blueProvider.getLandingPagePath()}${buildenv.JOB_NAME.replace('/','/pipelines/')}/runs/${buildenv.BUILD_NUMBER}")
-    
+
         def tree = _getNodeTree(build)
         def ret = []
     
