@@ -259,7 +259,9 @@ java.util.ArrayList getBlueOceanUrls(build = currentBuild) {
         }
         return ret
     } catch (ClassNotFoundException e) {
-       return []
+        return []
+    } catch (CpsCompilationErrorsException e) {
+        return []
     }
 }
 
