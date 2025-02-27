@@ -229,7 +229,8 @@ java.util.ArrayList getBlueOceanUrls(build = currentBuild) {
         assert rootUrl != null
     
         // TODO : find a better way to do get the rest url for this build ...
-        def blueProvider = new io.jenkins.blueocean.service.embedded.BlueOceanRootAction.BlueOceanUIProviderImpl()
+        def theClass = Class.forName('io.jenkins.blueocean.service.embedded.BlueOceanRootAction.BlueOceanUIProviderImpl')
+        def blueProvider = theClass.newInstance()
         def buildenv = build.rawBuild.getEnvironment()
         def restUrl = _cleanRootUrl("${jenkinsUrl}${blueProvider.getUrlBasePrefix()}/rest${blueProvider.getLandingPagePath()}${buildenv.JOB_NAME.replace('/','/pipelines/')}/runs/${buildenv.BUILD_NUMBER}")
     
