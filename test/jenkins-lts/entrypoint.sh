@@ -68,7 +68,7 @@ function create_local_repo() {
 
     # show status and last commit
     git status
-    git show -q
+    git --no-pager show -q
 }
 
 function clean() {
