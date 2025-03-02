@@ -217,6 +217,11 @@ String _cleanRootUrl(String urlIn) {
 }
 
 @NonCPS
+Boolean hasBlueOceanPlugin() {
+    return Jenkins.instance.pluginManager.plugins.collect { it.getShortName() }.count { it == 'blueocean' } > 0
+}
+
+@NonCPS
 java.util.ArrayList getBlueOceanUrls(build = currentBuild) {
     // if JENKIN_URL not configured correctly, use placeholder
     def jenkinsUrl = _cleanRootUrl(env.JENKINS_URL ?: '$JENKINS_URL')

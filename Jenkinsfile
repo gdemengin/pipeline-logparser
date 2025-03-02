@@ -864,9 +864,11 @@ def printUrls(check) {
     def bou
     def psu
     timestamps {
-        print 'before getBlueOceanUrls()'
-        bou = logparser.getBlueOceanUrls()
-        print 'after getBlueOceanUrls()'
+        if (logparser.hasBlueOceanPlugin()) {
+            print 'before getBlueOceanUrls()'
+            bou = logparser.getBlueOceanUrls()
+            print 'after getBlueOceanUrls()'
+        }
 
         print 'before getPipelineStepsUrls()'
         psu = logparser.getPipelineStepsUrls()
@@ -874,7 +876,11 @@ def printUrls(check) {
     }
 
     if (check) {
-        [ bou, psu ].each {
+        def toCheck = [ psu ]
+        if (logparser.hasBlueOceanPlugin()) {
+            toCheck = [ bou, psu ]
+        }
+        toCheck.each {
             assert it.findAll{ it.parent == null }.size() == 1
 
             // check expected steps
@@ -1062,18 +1068,20 @@ def printUrls(check) {
         if (it.host) { str += "${offset}- host = ${it.host}\n" }
     }
 
-    str += '\n********************\n'
-    str += '* Blue Ocean links *\n'
-    str += '********************\n'
-    bou.each {
-        def offset = ''
-        for(def i = 0; i < it.parents.size(); i++) { offset += '    ' }
-        str += "${offset}"
-        if (it.stage) { str += "stage " }
-        if (it.name) { str += "${it.name}" } else { str += "Start of Pipeline" }
-        str += " id=${it.id} parent=${it.parent} parents=${it.parents}\n"
-        str += "${offset}- url = ${it.url}\n"
-        str += "${offset}- log = ${it.log}\n"
+    if (logparser.hasBlueOceanPlugin()) {
+        str += '\n********************\n'
+        str += '* Blue Ocean links *\n'
+        str += '********************\n'
+        bou.each {
+            def offset = ''
+            for(def i = 0; i < it.parents.size(); i++) { offset += '    ' }
+            str += "${offset}"
+            if (it.stage) { str += "stage " }
+            if (it.name) { str += "${it.name}" } else { str += "Start of Pipeline" }
+            str += " id=${it.id} parent=${it.parent} parents=${it.parents}\n"
+            str += "${offset}- url = ${it.url}\n"
+            str += "${offset}- log = ${it.log}\n"
+        }
     }
 
     print str
@@ -1091,8 +1099,10 @@ def testCompletedJobs() {
     }
     def branches = logparser.getBranches([:], pipeline)
     assert branches == [ [null], ['stage1'] ], branches
-    def bou = logparser.getBlueOceanUrls(pipeline)
-    print bou
+    if (logparser.hasBlueOceanPlugin()) {
+        def bou = logparser.getBlueOceanUrls(pipeline)
+        print bou
+    }
     psu = logparser.getPipelineStepsUrls(pipeline)
     print psu
 
@@ -1225,6 +1235,13 @@ def testWriteToFile() {
 // ===============
 // = run tests   =
 // ===============
+
+// first check if blue ocean plugin is installed
+// (to make sure blueocean tests, activated by logparser.hasBlueOceanPlugin()  are run)
+// except if env var CHECK_BLUE_OCEAN is explicitely set to false
+if (env.CHECK_BLUE_OCEAN != 'false') {
+    assert logparser.hasBlueOceanPlugin(), 'blueocean plugin missing, please install it or use CHECK_BLUE_OCEAN=false'
+}
 
 testLogparser()
 testCompletedJobs()
