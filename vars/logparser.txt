@@ -7,6 +7,14 @@
     </p>
     <dl>
         <dt>
+            <b><code>Boolean hasBlueOceanPlugin()</code></b>
+        </dt>
+        <dd>
+            <p>
+                detect if blueocean is installed
+            </p>
+        </dd>
+        <dt>
             <b><code>java.util.ArrayList getBlueOceanUrls(RunWrapper build = currentBuild)</code></b>
         </dt>
         <dd>
