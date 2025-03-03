@@ -27,7 +27,7 @@ RUN_MANYTHREAD_TIMING_TEST = params.MANYTHREAD_TIMING_TEST == true
 // ============================
 // = import logparser library =
 // ============================
-// @Library('pipeline-logparser@3.2') _
+// @Library('pipeline-logparser@3.2.1') _
 node(LABEL_TEST_AGENT) {
     checkout scm
     def rev=sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()

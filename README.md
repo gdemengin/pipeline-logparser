@@ -32,7 +32,7 @@ Tested with:
 ### import pipeline-logparser library
 in Jenkinsfile import library like this
 ```
-@Library('pipeline-logparser@3.2') _
+@Library('pipeline-logparser@3.2.1') _
 ```
 _identifier "pipeline-logparser" is the name of the library set by jenkins administrator in instance configuration:_
 * _it may be different on your instance_
@@ -48,7 +48,7 @@ def mylog = logparser.getLogsWithBranchInfo()
 
 ### Detailed Documentation
 
-see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/3.2/vars/logparser.txt)  
+see online documentation here: [logparser.txt](https://htmlpreview.github.io/?https://github.com/gdemengin/pipeline-logparser/blob/3.2.1/vars/logparser.txt)  
 * _also available in $JOB_URL/pipeline-syntax/globals#logparser_
   * _visible only after the library has been imported once_
   * _requires configuring 'Markup Formater' as 'Safe HTML' in $JENKINS_URL/configureSecurity_
@@ -668,3 +668,6 @@ workarround: use `logparser.writeLogswithBranchInfo` to write logs directly in a
 
 * 3.2 (08/2022)
   - add function to write directly to a file #21
+
+* 3.2.1 (03/2024)
+  - fix installation when blueocean plugin is missing
