@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     name: test on jenkins lts
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: test jenkins-lts
         uses: ./test/jenkins-lts/
 
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     name: test without blueocean on jenkins lts
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: test jenkins-lts-noblue
         uses: ./test/jenkins-lts-noblue/
 
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     name: test on jenkins last good version
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: test jenkins-last
         uses: ./test/jenkins-last/
 
@@ -37,6 +37,6 @@ jobs:
     runs-on: ubuntu-latest
     name: test on jenkins 2.190.1
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: test jenkins-2.190.1
         uses: ./test/jenkins-2.190.1/
