@@ -17,7 +17,7 @@ Content:
 Tested with:
 
 [![test/jenkins-lts/plugins.txt](https://img.shields.io/badge/jenkins-lts-blue.svg)](test/jenkins-lts/plugins.txt)
-[![test/jenkins-last/versions.txt](https://img.shields.io/badge/jenkins-2.492.1-blue.svg)](test/jenkins-last/versions.txt)
+[![test/jenkins-last/versions.txt](https://img.shields.io/badge/jenkins-2.528.3-blue.svg)](test/jenkins-last/versions.txt)
 [![test/jenkins-2.190.1/versions.txt](https://img.shields.io/badge/jenkins-2.190.1-blue.svg)](test/jenkins-2.190.1/versions.txt)
 
 ## Table of contents

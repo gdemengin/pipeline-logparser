@@ -1,4 +1,4 @@
-FROM jenkins/jenkins:2.492.1
+FROM jenkins/jenkins:2.528.3
 
 # switch to root, let the entrypoint drop back to jenkins
 USER root
@@ -10,7 +10,6 @@ RUN apt-get update \
      ca-certificates \
      curl \
      gnupg2 \
-     software-properties-common \
      vim \
      wget \
      procps \
